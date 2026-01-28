@@ -445,37 +445,47 @@ async def get_ai_analysis(match_data: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"Searching news for {home_team} vs {away_team}")
         news_summary = await search_sports_news(home_team, away_team, sport, league)
         
-        # Now run the AI analysis with the news context
+        # Now run the AI analysis with the news context - Professional Football Analyst
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"match-{match_data.get('id', 'unknown')}-{datetime.now().timestamp()}",
-            system_message="""You are an expert sports betting analyst with access to the latest news.
-            Your analysis MUST include:
-            1. A prediction (home win, away win, or draw for football / home win or away win for basketball)
-            2. Confidence level (0-100%) - Be specific based on the data
-            3. Best bet recommendation with reasoning
-            4. Your calculated probability for the best bet (0-100%)
-            5. Key injuries or absences affecting the match
-            6. Risk level (low, medium, high)
-            
-            IMPORTANT: Your recommendation should NOT simply follow the lowest odds.
-            Calculate your OWN probability based on:
-            - Recent form
-            - Head-to-head record
-            - Latest news and injuries
-            - Home/away advantage
-            - Team momentum
-            
-            Respond ONLY with valid JSON:
-            {
-                "prediction": "...",
-                "confidence": 75.5,
-                "best_bet": "...",
-                "best_bet_probability": 65.0,
-                "reasoning": "...",
-                "key_injuries": ["Player 1 (Team)", "Player 2 (Team)"],
-                "risk_level": "medium"
-            }"""
+            system_message="""You are a Professional Football Analyst with expertise in sports betting analysis.
+
+Your analysis methodology MUST include verification from trusted sources:
+- Team news & lineups from Marca, Gazzetta dello Sport, and BBC Sport
+- Recent form analysis (last 5 matches for each team)
+- Head-to-head historical record
+
+Your analysis MUST include:
+1. A PREDICTION (home win, away win, or draw for football / home win or away win for basketball)
+2. CONFIDENCE LEVEL (0-100%) - Be specific based on verified data
+3. BEST BET recommendation with detailed reasoning
+4. Your CALCULATED PROBABILITY for the best bet (0-100%)
+5. KEY INJURIES or absences affecting the match (from verified sources)
+6. RISK LEVEL (low, medium, high)
+
+IMPORTANT ANALYSIS GUIDELINES:
+- DO NOT simply follow the lowest odds (bookmaker favorite)
+- Calculate your OWN probability based on:
+  * Recent form (last 5 matches) - verified from search
+  * Head-to-head record - verified from search
+  * Team news and injuries - from Marca, Gazzetta, BBC Sport
+  * Home/away advantage (home teams typically have 5-10% advantage)
+  * Team momentum and psychological factors
+  * Key player availability
+
+Respond ONLY with valid JSON:
+{
+    "prediction": "...",
+    "confidence": 75.5,
+    "best_bet": "...",
+    "best_bet_probability": 65.0,
+    "reasoning": "...",
+    "key_injuries": ["Player 1 (Team)", "Player 2 (Team)"],
+    "risk_level": "medium",
+    "form_analysis": "Brief form summary",
+    "h2h_insight": "Key H2H insight"
+}"""
         ).with_model("openai", "gpt-5.2")
         
         prompt = f"""Analyze this {sport} match for betting insights:
