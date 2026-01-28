@@ -19,7 +19,8 @@ import {
   Plus,
   Newspaper,
   Scale,
-  TrendingDown
+  TrendingDown,
+  Check
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useParlay } from "@/context/ParlayContext";
+import OddsButton from "@/components/OddsButton";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
