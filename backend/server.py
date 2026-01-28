@@ -389,31 +389,6 @@ def parse_football_data_match(match: Dict[str, Any], league_code: str, odds_map:
         "bookmakers": match_odds.get("bookmakers", [])[:5] if match_odds else []
     }
 
-def generate_realistic_odds(match: Dict[str, Any]) -> Dict[str, Any]:
-    """Generate realistic betting odds based on team data"""
-    import random
-    
-    # Base odds with some randomization for variety
-    home_base = round(1.5 + random.uniform(0, 1.5), 2)
-    draw_base = round(3.0 + random.uniform(0, 1.0), 2)
-    away_base = round(2.0 + random.uniform(0, 2.0), 2)
-    
-    return {
-        "Match Winner": {
-            "Home": str(home_base),
-            "Draw": str(draw_base),
-            "Away": str(away_base)
-        },
-        "Over/Under 2.5": {
-            "Over": str(round(1.7 + random.uniform(0, 0.3), 2)),
-            "Under": str(round(2.0 + random.uniform(0, 0.3), 2))
-        },
-        "Both Teams Score": {
-            "Yes": str(round(1.7 + random.uniform(0, 0.3), 2)),
-            "No": str(round(2.0 + random.uniform(0, 0.3), 2))
-        }
-    }
-
 def parse_basketball_game(game: Dict[str, Any], league_info: Dict[str, str]) -> Dict[str, Any]:
     """Parse a basketball game from API-Basketball format"""
     teams = game.get("teams", {})
