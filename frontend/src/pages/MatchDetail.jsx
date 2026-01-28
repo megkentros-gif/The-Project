@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "sonner";
 import {
@@ -13,7 +13,9 @@ import {
   Trophy,
   Dribbble,
   Target,
-  Shield
+  Shield,
+  Goal,
+  BarChart3
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function MatchDetail() {
   const { matchId } = useParams();
+  const navigate = useNavigate();
   const [match, setMatch] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -43,6 +46,10 @@ export default function MatchDetail() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBackClick = () => {
+    navigate("/");
   };
 
   const formatDate = (dateStr) => {
@@ -84,6 +91,50 @@ export default function MatchDetail() {
     }
   };
 
+  // Calculate probability from odds
+  const oddsToProbability = (odds) => {
+    if (!odds || parseFloat(odds) <= 0) return 0;
+    return ((1 / parseFloat(odds)) * 100).toFixed(1);
+  };
+
+  // Get Over/Under odds
+  const getOverUnderOdds = () => {
+    if (!match?.odds) return null;
+    const ou = match.odds["Over/Under 2.5"] || {};
+    return {
+      over: ou["Over"],
+      under: ou["Under"],
+      overProb: oddsToProbability(ou["Over"]),
+      underProb: oddsToProbability(ou["Under"])
+    };
+  };
+
+  // Get BTTS odds (Both Teams to Score / Goal-Goal)
+  const getBTTSOdds = () => {
+    if (!match?.odds) return null;
+    const btts = match.odds["Both Teams Score"] || match.odds["BTTS"] || {};
+    return {
+      yes: btts["Yes"],
+      no: btts["No"],
+      yesProb: oddsToProbability(btts["Yes"]),
+      noProb: oddsToProbability(btts["No"])
+    };
+  };
+
+  // Get Match Winner odds
+  const getMatchWinnerOdds = () => {
+    if (!match?.odds) return null;
+    const mw = match.odds["Match Winner"] || {};
+    return {
+      home: mw["Home"],
+      draw: mw["Draw"],
+      away: mw["Away"],
+      homeProb: oddsToProbability(mw["Home"]),
+      drawProb: oddsToProbability(mw["Draw"]),
+      awayProb: oddsToProbability(mw["Away"])
+    };
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -119,12 +170,14 @@ export default function MatchDetail() {
             <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-white mb-2">Match Not Found</h3>
             <p className="text-zinc-500 mb-4">Unable to load match details.</p>
-            <Link to="/">
-              <Button variant="outline" className="border-zinc-700 text-white">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-            </Link>
+            <Button 
+              variant="outline" 
+              className="border-zinc-700 text-white"
+              onClick={handleBackClick}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -132,17 +185,25 @@ export default function MatchDetail() {
   }
 
   const SportIcon = match.sport === "basketball" ? Dribbble : Trophy;
+  const overUnder = getOverUnderOdds();
+  const btts = getBTTSOdds();
+  const matchWinner = getMatchWinnerOdds();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="match-detail">
       {/* Back Button */}
-      <Link to="/" className="inline-flex items-center gap-2 text-zinc-400 hover:text-white mb-6 transition-colors">
+      <Button
+        variant="ghost"
+        onClick={handleBackClick}
+        className="inline-flex items-center gap-2 text-zinc-400 hover:text-white mb-6 transition-colors px-0"
+        data-testid="back-to-dashboard"
+      >
         <ArrowLeft className="w-4 h-4" />
         <span>Back to Dashboard</span>
-      </Link>
+      </Button>
 
       {/* Match Header */}
-      <Card className="bg-zinc-900 border-zinc-800 mb-8 overflow-hidden">
+      <Card className="bg-zinc-900 border-zinc-800 mb-8 overflow-hidden relative">
         <div 
           className="absolute inset-0 opacity-10"
           style={{
@@ -158,8 +219,13 @@ export default function MatchDetail() {
             <SportIcon className="w-5 h-5 text-zinc-500" />
             <span className="text-sm text-zinc-500 uppercase tracking-wide">{match.league}</span>
             <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-              {match.status === "SCHEDULED" || match.status === "TIMED" ? "Upcoming" : match.status}
+              {match.status === "NS" ? "Upcoming" : match.status}
             </Badge>
+            {match.has_odds && (
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                Real Odds
+              </Badge>
+            )}
           </div>
 
           <div className="flex items-center justify-between">
@@ -222,6 +288,108 @@ export default function MatchDetail() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Odds & Probabilities Section */}
+      {match.has_odds && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          {/* Match Winner Probabilities */}
+          {matchWinner && (
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-zinc-400 flex items-center gap-2">
+                  <Trophy className="w-4 h-4" />
+                  Match Winner
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400">Home</span>
+                    <div className="text-right">
+                      <span className="font-mono text-white">{matchWinner.home}</span>
+                      <span className="text-green-500 ml-2">({matchWinner.homeProb}%)</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400">Draw</span>
+                    <div className="text-right">
+                      <span className="font-mono text-white">{matchWinner.draw}</span>
+                      <span className="text-yellow-500 ml-2">({matchWinner.drawProb}%)</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400">Away</span>
+                    <div className="text-right">
+                      <span className="font-mono text-white">{matchWinner.away}</span>
+                      <span className="text-blue-500 ml-2">({matchWinner.awayProb}%)</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Over/Under 2.5 Goals */}
+          {overUnder && (overUnder.over || overUnder.under) && (
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-zinc-400 flex items-center gap-2">
+                  <Goal className="w-4 h-4" />
+                  Over/Under 2.5 Goals
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <span className="text-white font-medium">Over 2.5</span>
+                    <div className="text-right">
+                      <span className="font-mono text-xl text-white">{overUnder.over || 'N/A'}</span>
+                      <span className="text-green-500 ml-2 text-lg">({overUnder.overProb}%)</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-red-500/10 rounded-lg border border-red-500/20">
+                    <span className="text-white font-medium">Under 2.5</span>
+                    <div className="text-right">
+                      <span className="font-mono text-xl text-white">{overUnder.under || 'N/A'}</span>
+                      <span className="text-red-500 ml-2 text-lg">({overUnder.underProb}%)</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Both Teams to Score (GG/NG) */}
+          {btts && (btts.yes || btts.no) && (
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-zinc-400 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  Both Teams Score (GG/NG)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <span className="text-white font-medium">Goal-Goal (Yes)</span>
+                    <div className="text-right">
+                      <span className="font-mono text-xl text-white">{btts.yes || 'N/A'}</span>
+                      <span className="text-green-500 ml-2 text-lg">({btts.yesProb}%)</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-red-500/10 rounded-lg border border-red-500/20">
+                    <span className="text-white font-medium">No Goal (No)</span>
+                    <div className="text-right">
+                      <span className="font-mono text-xl text-white">{btts.no || 'N/A'}</span>
+                      <span className="text-red-500 ml-2 text-lg">({btts.noProb}%)</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
@@ -333,14 +501,16 @@ export default function MatchDetail() {
                   {match.head_to_head && match.head_to_head.length > 0 ? (
                     <div className="space-y-3">
                       {match.head_to_head.map((h2h, index) => (
-                        <div key={index} className="h2h-row">
-                          <div className="text-right">
+                        <div key={index} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
+                          <div className="flex-1 text-right">
                             <span className="font-medium text-white">{h2h.home}</span>
                           </div>
-                          <div className="font-mono font-bold text-white bg-zinc-800 px-4 py-2 rounded-lg">
-                            {h2h.home_score} - {h2h.away_score}
+                          <div className="px-4">
+                            <div className="font-mono font-bold text-white bg-zinc-700 px-4 py-2 rounded-lg">
+                              {h2h.home_score ?? '?'} - {h2h.away_score ?? '?'}
+                            </div>
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <span className="font-medium text-white">{h2h.away}</span>
                           </div>
                         </div>
@@ -361,40 +531,66 @@ export default function MatchDetail() {
                 {/* Home Form */}
                 <Card className="bg-zinc-900 border-zinc-800">
                   <CardHeader>
-                    <CardTitle className="text-white text-lg">{match.home_team} Form</CardTitle>
+                    <CardTitle className="text-white text-lg">{match.home_team}</CardTitle>
+                    <p className="text-sm text-zinc-500">Last 5 matches</p>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex gap-2">
-                      {(match.home_form || []).map((result, index) => (
-                        <div
-                          key={index}
-                          className={`form-badge ${getFormBadgeClass(result)}`}
-                        >
-                          {result}
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-sm text-zinc-500 mt-4">Last 5 matches</p>
+                    {match.home_form && match.home_form.length > 0 ? (
+                      <div className="flex gap-2">
+                        {match.home_form.map((result, index) => (
+                          <div
+                            key={index}
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold ${getFormBadgeClass(result)}`}
+                          >
+                            {result}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-zinc-500">No form data available</p>
+                    )}
+                    {match.home_form && match.home_form.length > 0 && (
+                      <div className="mt-4 text-sm text-zinc-400">
+                        <span className="text-green-500">{match.home_form.filter(r => r === 'W').length}W</span>
+                        {' '}-{' '}
+                        <span className="text-zinc-400">{match.home_form.filter(r => r === 'D').length}D</span>
+                        {' '}-{' '}
+                        <span className="text-red-500">{match.home_form.filter(r => r === 'L').length}L</span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
                 {/* Away Form */}
                 <Card className="bg-zinc-900 border-zinc-800">
                   <CardHeader>
-                    <CardTitle className="text-white text-lg">{match.away_team} Form</CardTitle>
+                    <CardTitle className="text-white text-lg">{match.away_team}</CardTitle>
+                    <p className="text-sm text-zinc-500">Last 5 matches</p>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex gap-2">
-                      {(match.away_form || []).map((result, index) => (
-                        <div
-                          key={index}
-                          className={`form-badge ${getFormBadgeClass(result)}`}
-                        >
-                          {result}
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-sm text-zinc-500 mt-4">Last 5 matches</p>
+                    {match.away_form && match.away_form.length > 0 ? (
+                      <div className="flex gap-2">
+                        {match.away_form.map((result, index) => (
+                          <div
+                            key={index}
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold ${getFormBadgeClass(result)}`}
+                          >
+                            {result}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-zinc-500">No form data available</p>
+                    )}
+                    {match.away_form && match.away_form.length > 0 && (
+                      <div className="mt-4 text-sm text-zinc-400">
+                        <span className="text-green-500">{match.away_form.filter(r => r === 'W').length}W</span>
+                        {' '}-{' '}
+                        <span className="text-zinc-400">{match.away_form.filter(r => r === 'D').length}D</span>
+                        {' '}-{' '}
+                        <span className="text-red-500">{match.away_form.filter(r => r === 'L').length}L</span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -451,31 +647,33 @@ export default function MatchDetail() {
           {/* Quick Actions */}
           <Card className="bg-zinc-900 border-zinc-800">
             <CardContent className="p-4">
-              <Link to="/parlay">
-                <Button 
-                  className="w-full bg-green-500 hover:bg-green-600 text-black font-bold uppercase"
-                  data-testid="add-to-parlay-btn"
-                >
-                  Add to Parlay
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
+              <Button 
+                className="w-full bg-green-500 hover:bg-green-600 text-black font-bold uppercase"
+                onClick={() => navigate("/parlay")}
+                data-testid="add-to-parlay-btn"
+              >
+                Add to Parlay
+                <ChevronRight className="w-4 h-4 ml-2" />
+              </Button>
             </CardContent>
           </Card>
 
-          {/* League Link */}
-          {match.league_code && (
-            <Link to={`/standings/${match.league_code}`}>
-              <Card className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors cursor-pointer">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Trophy className="w-5 h-5 text-zinc-500" />
-                    <span className="text-white">View {match.league} Standings</span>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-zinc-500" />
-                </CardContent>
-              </Card>
-            </Link>
+          {/* Bookmakers */}
+          {match.bookmakers && match.bookmakers.length > 0 && (
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-zinc-400">Odds From</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {match.bookmakers.slice(0, 5).map((book, i) => (
+                    <Badge key={i} className="bg-zinc-800 text-zinc-300">
+                      {book}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
