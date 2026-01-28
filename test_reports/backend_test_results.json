@@ -1,94 +1,166 @@
 {
-  "timestamp": "2026-01-28T14:48:56.444290",
-  "total_tests": 14,
-  "passed_tests": 14,
-  "failed_tests": 0,
-  "success_rate": 100.0,
+  "timestamp": "2026-01-28T16:23:22.351642",
+  "total_tests": 25,
+  "passed_tests": 24,
+  "failed_tests": 1,
+  "success_rate": 96.0,
   "test_results": [
     {
       "test": "Root Endpoint",
       "success": true,
       "details": "API is accessible",
-      "timestamp": "2026-01-28T14:48:44.698358"
+      "timestamp": "2026-01-28T16:22:15.205671"
     },
     {
       "test": "Basketball EuroLeague Check",
       "success": true,
       "details": "basketball_euroleague found in leagues",
-      "timestamp": "2026-01-28T14:48:44.734504"
+      "timestamp": "2026-01-28T16:22:15.255351"
     },
     {
       "test": "Leagues Endpoint",
       "success": true,
       "details": "Found 8 leagues",
-      "timestamp": "2026-01-28T14:48:44.734520"
+      "timestamp": "2026-01-28T16:22:15.255367"
     },
     {
       "test": "Premier League Matches",
       "success": true,
       "details": "Found 20 Premier League matches",
-      "timestamp": "2026-01-28T14:48:45.033496"
+      "timestamp": "2026-01-28T16:22:16.309502"
     },
     {
       "test": "Matches Endpoint",
       "success": true,
       "details": "Found 120 matches with valid structure",
-      "timestamp": "2026-01-28T14:48:46.826089"
+      "timestamp": "2026-01-28T16:22:18.069296"
     },
     {
       "test": "Extended Markets Structure",
       "success": true,
       "details": "No matches with odds found - structure cannot be tested (API quota may be exhausted)",
-      "timestamp": "2026-01-28T14:48:48.602251"
+      "timestamp": "2026-01-28T16:22:19.822815"
+    },
+    {
+      "test": "Quick Analysis - Field Presence",
+      "success": true,
+      "details": "All 120 matches have quick_analysis field",
+      "timestamp": "2026-01-28T16:22:25.909604"
+    },
+    {
+      "test": "Quick Analysis - Required Fields",
+      "success": true,
+      "details": "All required fields present",
+      "timestamp": "2026-01-28T16:22:25.909621"
+    },
+    {
+      "test": "Quick Analysis - Probability Range",
+      "success": true,
+      "details": "Probability 75.0 is within 0-95 range",
+      "timestamp": "2026-01-28T16:22:25.909632"
+    },
+    {
+      "test": "Quick Analysis - Best Pick Values",
+      "success": true,
+      "details": "Best pick 'Home Win' is valid",
+      "timestamp": "2026-01-28T16:22:25.909636"
+    },
+    {
+      "test": "Quick Analysis - Pick Type Values",
+      "success": true,
+      "details": "Pick type 'home' is valid",
+      "timestamp": "2026-01-28T16:22:25.909639"
+    },
+    {
+      "test": "Quick Analysis - Source Field",
+      "success": true,
+      "details": "Source 'ai_estimated' is valid",
+      "timestamp": "2026-01-28T16:22:25.909643"
+    },
+    {
+      "test": "PL Quick Analysis - Match 1 Source",
+      "success": true,
+      "details": "Source 'ai_estimated' is valid",
+      "timestamp": "2026-01-28T16:22:26.189987"
+    },
+    {
+      "test": "PL Quick Analysis - Match 2 Source",
+      "success": true,
+      "details": "Source 'ai_estimated' is valid",
+      "timestamp": "2026-01-28T16:22:26.190005"
+    },
+    {
+      "test": "PL Quick Analysis - Match 3 Source",
+      "success": true,
+      "details": "Source 'ai_estimated' is valid",
+      "timestamp": "2026-01-28T16:22:26.190009"
+    },
+    {
+      "test": "Probability Sorting Logic",
+      "success": true,
+      "details": "Found 120 matches with probabilities. Top 4: [85.0, 85.0, 85.0, 85.0]",
+      "timestamp": "2026-01-28T16:22:27.976063"
+    },
+    {
+      "test": "High Probability Matches",
+      "success": true,
+      "details": "Found 99 matches with >=60% probability",
+      "timestamp": "2026-01-28T16:22:27.976080"
     },
     {
       "test": "Match Detail AI Analysis (Core)",
       "success": true,
       "details": "Core AI analysis fields present",
-      "timestamp": "2026-01-28T14:48:54.147446"
+      "timestamp": "2026-01-28T16:22:50.090384"
     },
     {
       "test": "Match Detail AI Analysis (Enhanced)",
       "success": true,
       "details": "Enhanced fields present: ['news_summary', 'key_injuries']. value_bet missing due to no odds available (API quota exhausted)",
-      "timestamp": "2026-01-28T14:48:54.147465"
+      "timestamp": "2026-01-28T16:22:50.090404"
     },
     {
       "test": "Match Detail Endpoint",
       "success": true,
       "details": "Match detail loaded with fields: ['head_to_head', 'home_form', 'away_form', 'injuries']",
-      "timestamp": "2026-01-28T14:48:54.147471"
+      "timestamp": "2026-01-28T16:22:50.090410"
     },
     {
       "test": "Standings Endpoint",
-      "success": true,
-      "details": "Standings loaded with 20 teams",
-      "timestamp": "2026-01-28T14:48:54.248955"
+      "success": false,
+      "details": "Request failed: {'error': 'Request timeout'}",
+      "timestamp": "2026-01-28T16:23:20.166203"
     },
     {
       "test": "Parlay Calculate Endpoint",
       "success": true,
       "details": "Calculation correct: 3.24",
-      "timestamp": "2026-01-28T14:48:54.290301"
+      "timestamp": "2026-01-28T16:23:20.242986"
     },
     {
       "test": "League Filter",
       "success": true,
       "details": "League filter working: 20 matches",
-      "timestamp": "2026-01-28T14:48:54.603024"
+      "timestamp": "2026-01-28T16:23:20.563947"
     },
     {
       "test": "Sport Filter (Football)",
       "success": true,
       "details": "Football filter working: 120 matches",
-      "timestamp": "2026-01-28T14:48:56.275086"
+      "timestamp": "2026-01-28T16:23:22.194041"
     },
     {
       "test": "Sport Filter (Basketball)",
       "success": true,
       "details": "Basketball filter working: 0 matches",
-      "timestamp": "2026-01-28T14:48:56.443979"
+      "timestamp": "2026-01-28T16:23:22.351393"
     }
   ],
-  "failed_details": []
+  "failed_details": [
+    {
+      "test": "Standings Endpoint",
+      "error": "Request failed: {'error': 'Request timeout'}",
+      "response": null
+    }
+  ]
 }
