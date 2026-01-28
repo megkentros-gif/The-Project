@@ -213,15 +213,19 @@ async def fetch_real_odds(sport_key: str, use_cache: bool = True) -> Dict[str, D
                     away = match.get("away_team", "").lower()
                     key = f"{home}_{away}"
                     
+                    # Store raw bookmaker data for frontend parsing
+                    raw_bookmakers = match.get("bookmakers", [])
+                    
                     # Get best odds from all bookmakers
                     best_odds = {
                         "Match Winner": {}, 
                         "Over/Under 2.5": {}, 
                         "Both Teams Score": {},
-                        "bookmakers": []
+                        "bookmakers": [],
+                        "raw_bookmakers": raw_bookmakers  # Store raw data for frontend
                     }
                     
-                    for bookmaker in match.get("bookmakers", []):
+                    for bookmaker in raw_bookmakers:
                         book_name = bookmaker.get("title", "")
                         best_odds["bookmakers"].append(book_name)
                         
@@ -265,7 +269,18 @@ async def fetch_real_odds(sport_key: str, use_cache: bool = True) -> Dict[str, D
                                     elif name == "No":
                                         best_odds["Both Teams Score"]["No"] = str(round(price, 2))
                     
-                    odds_map[key] = best_odds
+                    # Also store the original match data for fallback
+                    odds_map[key] = {
+                        **best_odds,
+                        "match_data": {
+                            "id": match.get("id"),
+                            "commence_time": match.get("commence_time"),
+                            "home_team": match.get("home_team"),
+                            "away_team": match.get("away_team"),
+                            "sport_key": match.get("sport_key"),
+                            "sport_title": match.get("sport_title")
+                        }
+                    }
                 
                 set_cache(cache_key, odds_map)
                 return odds_map
