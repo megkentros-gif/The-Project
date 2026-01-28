@@ -518,8 +518,8 @@ async def get_match_detail(match_id: str):
                         form.append("D")
             return form
         
-        match["home_form"] = extract_form(home_team_id, home_form_data.get("response", []))
-        match["away_form"] = extract_form(away_team_id, away_form_data.get("response", []))
+        match["home_form"] = extract_form(home_team_id, home_form_data.get("response", [])[-5:])
+        match["away_form"] = extract_form(away_team_id, away_form_data.get("response", [])[-5:])
         
         # Fetch injuries
         await asyncio.sleep(0.5)
