@@ -329,11 +329,13 @@ async def get_matches(
     """Get upcoming matches with odds from API-Football/API-Basketball"""
     all_matches = []
     
-    # Use current real date
-    today = datetime.now()
+    # Use dates from current 2024-2025 season that actually have data
+    # The 2024 season runs from Aug 2024 to May 2025
+    # For demo, we'll fetch recent/upcoming fixtures from Jan 2025
     if not date:
-        date_from = today.strftime("%Y-%m-%d")
-        date_to = (today + timedelta(days=7)).strftime("%Y-%m-%d")
+        # Use January 2025 dates for 2024 season data
+        date_from = "2025-01-25"
+        date_to = "2025-02-01"
     else:
         date_from = date
         date_to = date
