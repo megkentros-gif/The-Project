@@ -180,7 +180,7 @@ async def fetch_api_basketball(endpoint: str, use_cache: bool = True) -> Dict[st
             return {}
 
 async def fetch_real_odds(sport_key: str, use_cache: bool = True) -> Dict[str, Dict]:
-    """Fetch real odds from The Odds API"""
+    """Fetch real odds from The Odds API with extended markets"""
     if not ODDS_API_KEY:
         logger.warning("ODDS_API_KEY not configured")
         return {}
@@ -194,9 +194,9 @@ async def fetch_real_odds(sport_key: str, use_cache: bool = True) -> Dict[str, D
     async with httpx.AsyncClient() as http_client:
         try:
             url = f"{ODDS_API_BASE}/sports/{sport_key}/odds"
-            # Only include BTTS for soccer leagues (not basketball)
-            # Note: BTTS may not be available for all leagues
-            markets = "h2h,totals"
+            # Extended markets: h2h, totals, spreads (handicap), btts
+            # This gives us "Stoiximan-style" depth without player props
+            markets = "h2h,totals,spreads"
             
             params = {
                 "apiKey": ODDS_API_KEY,
@@ -219,10 +219,12 @@ async def fetch_real_odds(sport_key: str, use_cache: bool = True) -> Dict[str, D
                     # Store raw bookmaker data for frontend parsing
                     raw_bookmakers = match.get("bookmakers", [])
                     
-                    # Get best odds from all bookmakers
+                    # Get best odds from all bookmakers with extended markets
                     best_odds = {
                         "Match Winner": {}, 
-                        "Over/Under 2.5": {}, 
+                        "Over/Under 2.5": {},
+                        "Over/Under Alternative": {},  # Alternative lines
+                        "Handicap": {},  # Spread/Handicap market
                         "Both Teams Score": {},
                         "bookmakers": [],
                         "raw_bookmakers": raw_bookmakers  # Store raw data for frontend
@@ -230,7 +232,8 @@ async def fetch_real_odds(sport_key: str, use_cache: bool = True) -> Dict[str, D
                     
                     for bookmaker in raw_bookmakers:
                         book_name = bookmaker.get("title", "")
-                        best_odds["bookmakers"].append(book_name)
+                        if book_name not in best_odds["bookmakers"]:
+                            best_odds["bookmakers"].append(book_name)
                         
                         for market in bookmaker.get("markets", []):
                             market_key = market.get("key", "")
@@ -256,11 +259,31 @@ async def fetch_real_odds(sport_key: str, use_cache: bool = True) -> Dict[str, D
                                     price = outcome.get("price", 0)
                                     point = outcome.get("point", 2.5)
                                     
+                                    # Main 2.5 line
                                     if point == 2.5:
                                         if name == "Over":
                                             best_odds["Over/Under 2.5"]["Over"] = str(round(price, 2))
                                         elif name == "Under":
                                             best_odds["Over/Under 2.5"]["Under"] = str(round(price, 2))
+                                    
+                                    # Alternative lines (1.5, 3.5, etc.)
+                                    line_key = f"{name} {point}"
+                                    if line_key not in best_odds["Over/Under Alternative"]:
+                                        best_odds["Over/Under Alternative"][line_key] = str(round(price, 2))
+                            
+                            elif market_key == "spreads":
+                                # Handicap/Spread market
+                                for outcome in market.get("outcomes", []):
+                                    name = outcome.get("name", "")
+                                    price = outcome.get("price", 0)
+                                    point = outcome.get("point", 0)
+                                    
+                                    if name == match.get("home_team"):
+                                        handicap_key = f"Home ({'+' if point > 0 else ''}{point})"
+                                        best_odds["Handicap"][handicap_key] = str(round(price, 2))
+                                    elif name == match.get("away_team"):
+                                        handicap_key = f"Away ({'+' if point > 0 else ''}{point})"
+                                        best_odds["Handicap"][handicap_key] = str(round(price, 2))
                             
                             elif market_key == "btts":
                                 for outcome in market.get("outcomes", []):
