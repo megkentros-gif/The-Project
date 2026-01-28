@@ -24,10 +24,12 @@ db = client[os.environ['DB_NAME']]
 # API Keys
 FOOTBALL_DATA_KEY = os.environ.get('FOOTBALL_DATA_KEY', '')
 API_FOOTBALL_KEY = os.environ.get('API_FOOTBALL_KEY', '')
+ODDS_API_KEY = os.environ.get('ODDS_API_KEY', '')
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 
 # API Base URLs
 FOOTBALL_DATA_BASE = "https://api.football-data.org/v4"
+ODDS_API_BASE = "https://api.the-odds-api.com/v4"
 API_BASKETBALL_BASE = "https://v1.basketball.api-sports.io"
 
 # Create the main app
