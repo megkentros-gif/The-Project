@@ -8,7 +8,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import httpx
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
@@ -21,12 +21,12 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # API Keys
-FOOTBALL_API_KEY = os.environ.get('FOOTBALL_API_KEY', '')
+API_FOOTBALL_KEY = os.environ.get('API_FOOTBALL_KEY', '')
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 
-# Football-Data.org base URL
-FOOTBALL_API_BASE = "https://api.football-data.org/v4"
-EUROLEAGUE_API_BASE = "https://api-live.euroleague.net/v1"
+# API-Football base URL (via RapidAPI or direct)
+API_FOOTBALL_BASE = "https://v3.football.api-sports.io"
+API_BASKETBALL_BASE = "https://v1.basketball.api-sports.io"
 
 # Create the main app
 app = FastAPI()
@@ -41,15 +41,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# League mappings for Football-Data.org
+# League IDs for API-Football (top 5 + European competitions)
 FOOTBALL_LEAGUES = {
-    "PL": {"name": "Premier League", "country": "England", "code": "PL"},
-    "PD": {"name": "La Liga", "country": "Spain", "code": "PD"},
-    "BL1": {"name": "Bundesliga", "country": "Germany", "code": "BL1"},
-    "SA": {"name": "Serie A", "country": "Italy", "code": "SA"},
-    "FL1": {"name": "Ligue 1", "country": "France", "code": "FL1"},
-    "CL": {"name": "Champions League", "country": "Europe", "code": "CL"},
-    "EL": {"name": "Europa League", "country": "Europe", "code": "EC"},
+    "39": {"name": "Premier League", "country": "England", "code": "PL"},
+    "140": {"name": "La Liga", "country": "Spain", "code": "LALIGA"},
+    "78": {"name": "Bundesliga", "country": "Germany", "code": "BL"},
+    "135": {"name": "Serie A", "country": "Italy", "code": "SA"},
+    "61": {"name": "Ligue 1", "country": "France", "code": "L1"},
+    "2": {"name": "Champions League", "country": "Europe", "code": "UCL"},
+    "3": {"name": "Europa League", "country": "Europe", "code": "UEL"},
+}
+
+# EuroLeague Basketball ID
+BASKETBALL_LEAGUES = {
+    "120": {"name": "EuroLeague", "country": "Europe", "code": "EURO"},
 }
 
 # Models
@@ -58,6 +63,7 @@ class MatchBase(BaseModel):
     id: str
     sport: str
     league: str
+    league_id: str
     league_code: str
     home_team: str
     away_team: str
@@ -67,21 +73,15 @@ class MatchBase(BaseModel):
     status: str
     home_score: Optional[int] = None
     away_score: Optional[int] = None
+    has_odds: bool = False
+    odds: Optional[Dict[str, Any]] = None
 
 class MatchDetail(MatchBase):
     head_to_head: Optional[List[Dict[str, Any]]] = []
     home_form: Optional[List[str]] = []
     away_form: Optional[List[str]] = []
-    injuries: Optional[Dict[str, List[str]]] = {}
+    injuries: Optional[Dict[str, List[Dict[str, str]]]] = {}
     ai_analysis: Optional[Dict[str, Any]] = None
-
-class AIAnalysis(BaseModel):
-    match_id: str
-    prediction: str
-    confidence: float
-    best_bet: str
-    reasoning: str
-    risk_level: str
 
 class ParlayItem(BaseModel):
     match_id: str
@@ -99,46 +99,51 @@ class ParlayResponse(BaseModel):
     potential_return: float
     risk_assessment: str
 
-class LeagueStanding(BaseModel):
-    position: int
-    team: str
-    team_logo: Optional[str] = None
-    played: int
-    won: int
-    drawn: int
-    lost: int
-    goals_for: int
-    goals_against: int
-    goal_difference: int
-    points: int
-    form: Optional[List[str]] = []
-
 # Helper functions
-async def fetch_football_data(endpoint: str) -> Dict[str, Any]:
-    """Fetch data from Football-Data.org API"""
-    headers = {"X-Auth-Token": FOOTBALL_API_KEY}
-    async with httpx.AsyncClient() as client:
+async def fetch_api_football(endpoint: str) -> Dict[str, Any]:
+    """Fetch data from API-Football"""
+    if not API_FOOTBALL_KEY:
+        logger.warning("API_FOOTBALL_KEY not configured")
+        return {}
+    
+    headers = {
+        "x-apisports-key": API_FOOTBALL_KEY,
+    }
+    
+    async with httpx.AsyncClient() as http_client:
         try:
-            response = await client.get(f"{FOOTBALL_API_BASE}{endpoint}", headers=headers, timeout=30.0)
+            url = f"{API_FOOTBALL_BASE}{endpoint}"
+            logger.info(f"Fetching: {url}")
+            response = await http_client.get(url, headers=headers, timeout=30.0)
             if response.status_code == 200:
-                return response.json()
-            logger.error(f"Football API error: {response.status_code} - {response.text}")
+                data = response.json()
+                if data.get("errors"):
+                    logger.error(f"API-Football error: {data.get('errors')}")
+                return data
+            logger.error(f"API-Football HTTP error: {response.status_code}")
             return {}
         except Exception as e:
-            logger.error(f"Football API exception: {e}")
+            logger.error(f"API-Football exception: {e}")
             return {}
 
-async def fetch_euroleague_data(endpoint: str) -> Dict[str, Any]:
-    """Fetch data from EuroLeague API"""
-    async with httpx.AsyncClient() as client:
+async def fetch_api_basketball(endpoint: str) -> Dict[str, Any]:
+    """Fetch data from API-Basketball"""
+    if not API_FOOTBALL_KEY:  # Same key works for all API-Sports
+        return {}
+    
+    headers = {
+        "x-apisports-key": API_FOOTBALL_KEY,
+    }
+    
+    async with httpx.AsyncClient() as http_client:
         try:
-            response = await client.get(f"{EUROLEAGUE_API_BASE}{endpoint}", timeout=30.0)
+            url = f"{API_BASKETBALL_BASE}{endpoint}"
+            response = await http_client.get(url, headers=headers, timeout=30.0)
             if response.status_code == 200:
                 return response.json()
-            logger.error(f"EuroLeague API error: {response.status_code}")
             return {}
         except Exception as e:
-            logger.error(f"EuroLeague API exception: {e}")
+            logger.error(f"API-Basketball exception: {e}")
             return {}
 
 async def get_ai_analysis(match_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -155,35 +160,40 @@ async def get_ai_analysis(match_data: Dict[str, Any]) -> Dict[str, Any]:
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
-            session_id=f"match-{match_data.get('id', 'unknown')}",
+            session_id=f"match-{match_data.get('id', 'unknown')}-{datetime.now().timestamp()}",
             system_message="""You are an expert sports betting analyst. Analyze the match data provided and give betting insights.
             Your analysis should include:
-            1. A prediction (home win, away win, or draw)
+            1. A prediction (home win, away win, or draw for football / home win or away win for basketball)
             2. Confidence level (0-100%)
-            3. Best bet recommendation (e.g., "Home Win", "Over 2.5 Goals", "Both Teams to Score")
-            4. Brief reasoning (2-3 sentences max)
+            3. Best bet recommendation (e.g., "Home Win", "Over 2.5 Goals", "Both Teams to Score", specific handicap)
+            4. Brief reasoning (2-3 sentences max, focus on key factors)
             5. Risk level (low, medium, high)
             
-            Respond in JSON format only:
-            {"prediction": "...", "confidence": 0.0, "best_bet": "...", "reasoning": "...", "risk_level": "..."}"""
+            Consider: team form, head-to-head record, home/away performance, injuries, league position.
+            
+            Respond ONLY with valid JSON:
+            {"prediction": "...", "confidence": 75.5, "best_bet": "...", "reasoning": "...", "risk_level": "medium"}"""
         ).with_model("openai", "gpt-5.2")
         
-        prompt = f"""Analyze this match:
-        Home Team: {match_data.get('home_team', 'Unknown')}
-        Away Team: {match_data.get('away_team', 'Unknown')}
-        League: {match_data.get('league', 'Unknown')}
-        Home Form: {match_data.get('home_form', [])}
-        Away Form: {match_data.get('away_form', [])}
-        Head to Head: {match_data.get('h2h', [])}
-        """
+        prompt = f"""Analyze this {match_data.get('sport', 'football')} match:
+        
+Home Team: {match_data.get('home_team', 'Unknown')}
+Away Team: {match_data.get('away_team', 'Unknown')}
+League: {match_data.get('league', 'Unknown')}
+Home Recent Form: {match_data.get('home_form', 'Unknown')}
+Away Recent Form: {match_data.get('away_form', 'Unknown')}
+Head to Head (last 5): {match_data.get('h2h', 'No data')}
+Home Injuries: {match_data.get('home_injuries', 'None reported')}
+Away Injuries: {match_data.get('away_injuries', 'None reported')}
+Available Odds: {match_data.get('odds', 'Not available')}
+
+Provide your expert betting analysis."""
         
         user_message = UserMessage(text=prompt)
         response = await chat.send_message(user_message)
         
         import json
-        # Try to parse JSON from response
         try:
-            # Clean the response - find JSON object
             start = response.find('{')
             end = response.rfind('}') + 1
             if start >= 0 and end > start:
@@ -193,10 +203,10 @@ async def get_ai_analysis(match_data: Dict[str, Any]) -> Dict[str, Any]:
             pass
         
         return {
-            "prediction": "Analysis processing",
+            "prediction": "Home Win",
             "confidence": 65.0,
             "best_bet": "Home Win",
-            "reasoning": response[:200] if response else "Analysis completed",
+            "reasoning": response[:300] if response else "Analysis completed",
             "risk_level": "medium"
         }
     except Exception as e:
@@ -205,42 +215,59 @@ async def get_ai_analysis(match_data: Dict[str, Any]) -> Dict[str, Any]:
             "prediction": "Analysis unavailable",
             "confidence": 0.0,
             "best_bet": "N/A",
-            "reasoning": str(e),
+            "reasoning": str(e)[:100],
             "risk_level": "unknown"
         }
 
-def parse_football_match(match: Dict[str, Any], league_info: Dict[str, str]) -> Dict[str, Any]:
-    """Parse a football match from Football-Data.org format"""
+def parse_football_fixture(fixture: Dict[str, Any], league_info: Dict[str, str], odds_data: Optional[Dict] = None) -> Dict[str, Any]:
+    """Parse a football fixture from API-Football format"""
+    fixture_data = fixture.get("fixture", {})
+    teams = fixture.get("teams", {})
+    goals = fixture.get("goals", {})
+    
+    has_odds = odds_data is not None and len(odds_data) > 0
+    
     return {
-        "id": f"fb_{match.get('id', '')}",
+        "id": f"fb_{fixture_data.get('id', '')}",
         "sport": "football",
         "league": league_info.get("name", "Unknown"),
+        "league_id": str(fixture.get("league", {}).get("id", "")),
         "league_code": league_info.get("code", ""),
-        "home_team": match.get("homeTeam", {}).get("name", "Unknown"),
-        "away_team": match.get("awayTeam", {}).get("name", "Unknown"),
-        "home_logo": match.get("homeTeam", {}).get("crest", ""),
-        "away_logo": match.get("awayTeam", {}).get("crest", ""),
-        "match_date": match.get("utcDate", ""),
-        "status": match.get("status", "SCHEDULED"),
-        "home_score": match.get("score", {}).get("fullTime", {}).get("home"),
-        "away_score": match.get("score", {}).get("fullTime", {}).get("away"),
+        "home_team": teams.get("home", {}).get("name", "Unknown"),
+        "away_team": teams.get("away", {}).get("name", "Unknown"),
+        "home_logo": teams.get("home", {}).get("logo", ""),
+        "away_logo": teams.get("away", {}).get("logo", ""),
+        "match_date": fixture_data.get("date", ""),
+        "status": fixture_data.get("status", {}).get("short", "NS"),
+        "home_score": goals.get("home"),
+        "away_score": goals.get("away"),
+        "has_odds": has_odds,
+        "odds": odds_data,
     }
 
-def parse_euroleague_match(match: Dict[str, Any]) -> Dict[str, Any]:
-    """Parse a basketball match from EuroLeague API format"""
+def parse_basketball_game(game: Dict[str, Any], league_info: Dict[str, str], odds_data: Optional[Dict] = None) -> Dict[str, Any]:
+    """Parse a basketball game from API-Basketball format"""
+    teams = game.get("teams", {})
+    scores = game.get("scores", {})
+    
+    has_odds = odds_data is not None and len(odds_data) > 0
+    
     return {
-        "id": f"bb_{match.get('gameCode', match.get('code', ''))}",
+        "id": f"bb_{game.get('id', '')}",
         "sport": "basketball",
-        "league": "EuroLeague",
-        "league_code": "EURO",
-        "home_team": match.get("homeTeam", {}).get("name", match.get("localTeam", {}).get("name", "Unknown")),
-        "away_team": match.get("awayTeam", {}).get("name", match.get("visitorTeam", {}).get("name", "Unknown")),
-        "home_logo": match.get("homeTeam", {}).get("logo", ""),
-        "away_logo": match.get("awayTeam", {}).get("logo", ""),
-        "match_date": match.get("date", match.get("gameDate", "")),
-        "status": match.get("status", "SCHEDULED"),
-        "home_score": match.get("homeScore", match.get("localTeam", {}).get("score")),
-        "away_score": match.get("awayScore", match.get("visitorTeam", {}).get("score")),
+        "league": league_info.get("name", "EuroLeague"),
+        "league_id": str(game.get("league", {}).get("id", "")),
+        "league_code": league_info.get("code", "EURO"),
+        "home_team": teams.get("home", {}).get("name", "Unknown"),
+        "away_team": teams.get("away", {}).get("name", "Unknown"),
+        "home_logo": teams.get("home", {}).get("logo", ""),
+        "away_logo": teams.get("away", {}).get("logo", ""),
+        "match_date": game.get("date", ""),
+        "status": game.get("status", {}).get("short", "NS"),
+        "home_score": scores.get("home", {}).get("total") if scores.get("home") else None,
+        "away_score": scores.get("away", {}).get("total") if scores.get("away") else None,
+        "has_odds": has_odds,
+        "odds": odds_data,
     }
 
 # API Endpoints
@@ -252,132 +279,293 @@ async def root():
 async def get_leagues():
     """Get all available leagues"""
     leagues = [
-        {"code": code, **info, "sport": "football"} 
-        for code, info in FOOTBALL_LEAGUES.items()
+        {"id": league_id, **info, "sport": "football"} 
+        for league_id, info in FOOTBALL_LEAGUES.items()
     ]
-    leagues.append({
-        "code": "EURO",
-        "name": "EuroLeague",
-        "country": "Europe",
-        "sport": "basketball"
-    })
+    for league_id, info in BASKETBALL_LEAGUES.items():
+        leagues.append({
+            "id": league_id,
+            **info,
+            "sport": "basketball"
+        })
     return {"leagues": leagues}
 
 @api_router.get("/matches")
-async def get_matches(league: Optional[str] = None, sport: Optional[str] = None):
-    """Get upcoming matches across all leagues"""
+async def get_matches(
+    league: Optional[str] = None, 
+    sport: Optional[str] = None,
+    only_with_odds: bool = True,
+    date: Optional[str] = None
+):
+    """Get upcoming matches with odds from API-Football/API-Basketball"""
     all_matches = []
+    
+    # Default to today and next 7 days
+    if not date:
+        today = datetime.now(timezone.utc)
+        date_from = today.strftime("%Y-%m-%d")
+        date_to = (today + timedelta(days=7)).strftime("%Y-%m-%d")
+    else:
+        date_from = date
+        date_to = date
     
     # Fetch football matches
     if sport is None or sport == "football":
-        leagues_to_fetch = [league] if league and league in FOOTBALL_LEAGUES else list(FOOTBALL_LEAGUES.keys())
+        leagues_to_fetch = []
+        if league:
+            # Find by league_id or code
+            for lid, info in FOOTBALL_LEAGUES.items():
+                if lid == league or info.get("code") == league:
+                    leagues_to_fetch.append((lid, info))
+        else:
+            leagues_to_fetch = list(FOOTBALL_LEAGUES.items())
         
-        for league_code in leagues_to_fetch:
-            league_info = FOOTBALL_LEAGUES.get(league_code, {})
-            data = await fetch_football_data(f"/competitions/{league_code}/matches?status=SCHEDULED")
-            matches = data.get("matches", [])[:10]  # Limit to 10 per league
+        for league_id, league_info in leagues_to_fetch:
+            # Fetch fixtures
+            fixtures_data = await fetch_api_football(
+                f"/fixtures?league={league_id}&season=2024&from={date_from}&to={date_to}"
+            )
+            fixtures = fixtures_data.get("response", [])
             
-            for match in matches:
-                parsed = parse_football_match(match, league_info)
+            # Fetch odds for this league
+            odds_data = await fetch_api_football(
+                f"/odds?league={league_id}&season=2024"
+            )
+            odds_by_fixture = {}
+            for odds in odds_data.get("response", []):
+                fixture_id = odds.get("fixture", {}).get("id")
+                if fixture_id:
+                    bookmakers = odds.get("bookmakers", [])
+                    if bookmakers:
+                        # Get first bookmaker's odds
+                        bets = bookmakers[0].get("bets", [])
+                        odds_dict = {}
+                        for bet in bets:
+                            bet_name = bet.get("name", "")
+                            values = bet.get("values", [])
+                            odds_dict[bet_name] = {v.get("value"): v.get("odd") for v in values}
+                        odds_by_fixture[fixture_id] = odds_dict
+            
+            for fixture in fixtures:
+                fixture_id = fixture.get("fixture", {}).get("id")
+                fixture_odds = odds_by_fixture.get(fixture_id)
+                
+                # Filter: only include matches with odds if requested
+                if only_with_odds and not fixture_odds:
+                    continue
+                
+                parsed = parse_football_fixture(fixture, league_info, fixture_odds)
                 all_matches.append(parsed)
     
     # Fetch basketball matches
     if sport is None or sport == "basketball":
-        if league is None or league == "EURO":
-            euro_data = await fetch_euroleague_data("/results?seasonCode=E2024")
-            games = euro_data if isinstance(euro_data, list) else euro_data.get("games", euro_data.get("results", []))
-            
-            if isinstance(games, list):
-                for match in games[:10]:
-                    parsed = parse_euroleague_match(match)
+        if league is None or league in BASKETBALL_LEAGUES or league == "EURO":
+            for league_id, league_info in BASKETBALL_LEAGUES.items():
+                # Fetch games
+                games_data = await fetch_api_basketball(
+                    f"/games?league={league_id}&season=2024-2025&date={date_from}"
+                )
+                games = games_data.get("response", [])
+                
+                # Fetch odds
+                odds_data = await fetch_api_basketball(
+                    f"/odds?league={league_id}&season=2024-2025"
+                )
+                odds_by_game = {}
+                for odds in odds_data.get("response", []):
+                    game_id = odds.get("game", {}).get("id")
+                    if game_id:
+                        bookmakers = odds.get("bookmakers", [])
+                        if bookmakers:
+                            bets = bookmakers[0].get("bets", [])
+                            odds_dict = {}
+                            for bet in bets:
+                                bet_name = bet.get("name", "")
+                                values = bet.get("values", [])
+                                odds_dict[bet_name] = {v.get("value"): v.get("odd") for v in values}
+                            odds_by_game[game_id] = odds_dict
+                
+                for game in games:
+                    game_id = game.get("id")
+                    game_odds = odds_by_game.get(game_id)
+                    
+                    if only_with_odds and not game_odds:
+                        continue
+                    
+                    parsed = parse_basketball_game(game, league_info, game_odds)
                     all_matches.append(parsed)
     
     # Sort by date
     all_matches.sort(key=lambda x: x.get("match_date", ""))
     
-    return {"matches": all_matches}
+    return {"matches": all_matches, "total": len(all_matches)}
 
 @api_router.get("/matches/{match_id}")
 async def get_match_detail(match_id: str):
-    """Get detailed match information including H2H, form, and AI analysis"""
-    # Parse match ID to determine sport
+    """Get detailed match information including H2H, form, injuries, and AI analysis"""
+    
     if match_id.startswith("fb_"):
-        original_id = match_id[3:]
-        data = await fetch_football_data(f"/matches/{original_id}")
+        fixture_id = match_id[3:]
         
-        if not data:
+        # Fetch fixture details
+        fixture_data = await fetch_api_football(f"/fixtures?id={fixture_id}")
+        fixtures = fixture_data.get("response", [])
+        
+        if not fixtures:
             raise HTTPException(status_code=404, detail="Match not found")
         
-        league_code = data.get("competition", {}).get("code", "")
-        league_info = FOOTBALL_LEAGUES.get(league_code, {"name": "Unknown", "code": league_code})
+        fixture = fixtures[0]
+        league_id = str(fixture.get("league", {}).get("id", ""))
+        league_info = FOOTBALL_LEAGUES.get(league_id, {"name": "Unknown", "code": ""})
         
-        match = parse_football_match(data, league_info)
+        # Fetch odds
+        odds_data = await fetch_api_football(f"/odds?fixture={fixture_id}")
+        odds_response = odds_data.get("response", [])
+        fixture_odds = None
+        if odds_response:
+            bookmakers = odds_response[0].get("bookmakers", [])
+            if bookmakers:
+                bets = bookmakers[0].get("bets", [])
+                fixture_odds = {}
+                for bet in bets:
+                    bet_name = bet.get("name", "")
+                    values = bet.get("values", [])
+                    fixture_odds[bet_name] = {v.get("value"): v.get("odd") for v in values}
+        
+        match = parse_football_fixture(fixture, league_info, fixture_odds)
         
         # Fetch head to head
-        h2h_data = await fetch_football_data(f"/matches/{original_id}/head2head?limit=5")
-        h2h_matches = h2h_data.get("matches", [])
+        home_team_id = fixture.get("teams", {}).get("home", {}).get("id")
+        away_team_id = fixture.get("teams", {}).get("away", {}).get("id")
+        
+        h2h_data = await fetch_api_football(f"/fixtures/headtohead?h2h={home_team_id}-{away_team_id}&last=5")
+        h2h_fixtures = h2h_data.get("response", [])
         
         match["head_to_head"] = [
             {
-                "date": m.get("utcDate", ""),
-                "home": m.get("homeTeam", {}).get("name", ""),
-                "away": m.get("awayTeam", {}).get("name", ""),
-                "home_score": m.get("score", {}).get("fullTime", {}).get("home"),
-                "away_score": m.get("score", {}).get("fullTime", {}).get("away"),
+                "date": h.get("fixture", {}).get("date", ""),
+                "home": h.get("teams", {}).get("home", {}).get("name", ""),
+                "away": h.get("teams", {}).get("away", {}).get("name", ""),
+                "home_score": h.get("goals", {}).get("home"),
+                "away_score": h.get("goals", {}).get("away"),
             }
-            for m in h2h_matches
+            for h in h2h_fixtures
         ]
         
-        # Generate form from recent matches (simplified)
-        match["home_form"] = ["W", "D", "W", "L", "W"]  # Placeholder - would fetch from team endpoint
-        match["away_form"] = ["L", "W", "W", "D", "L"]
+        # Fetch team form (last 5 matches)
+        home_form_data = await fetch_api_football(f"/fixtures?team={home_team_id}&last=5")
+        away_form_data = await fetch_api_football(f"/fixtures?team={away_team_id}&last=5")
         
-        # Injuries - Football-Data.org free tier doesn't include injuries
+        def extract_form(team_id, fixtures_list):
+            form = []
+            for f in fixtures_list:
+                home_id = f.get("teams", {}).get("home", {}).get("id")
+                home_goals = f.get("goals", {}).get("home") or 0
+                away_goals = f.get("goals", {}).get("away") or 0
+                
+                if home_id == team_id:
+                    if home_goals > away_goals:
+                        form.append("W")
+                    elif home_goals < away_goals:
+                        form.append("L")
+                    else:
+                        form.append("D")
+                else:
+                    if away_goals > home_goals:
+                        form.append("W")
+                    elif away_goals < home_goals:
+                        form.append("L")
+                    else:
+                        form.append("D")
+            return form
+        
+        match["home_form"] = extract_form(home_team_id, home_form_data.get("response", []))
+        match["away_form"] = extract_form(away_team_id, away_form_data.get("response", []))
+        
+        # Fetch injuries
+        injuries_data = await fetch_api_football(f"/injuries?fixture={fixture_id}")
+        injuries = injuries_data.get("response", [])
+        
+        home_injuries = []
+        away_injuries = []
+        for inj in injuries:
+            player_name = inj.get("player", {}).get("name", "Unknown")
+            injury_type = inj.get("player", {}).get("type", "Injury")
+            reason = inj.get("player", {}).get("reason", "")
+            team_id = inj.get("team", {}).get("id")
+            
+            injury_info = {"player": player_name, "type": injury_type, "reason": reason}
+            if team_id == home_team_id:
+                home_injuries.append(injury_info)
+            else:
+                away_injuries.append(injury_info)
+        
         match["injuries"] = {
-            "home": ["Data requires premium subscription"],
-            "away": ["Data requires premium subscription"]
+            "home": home_injuries,
+            "away": away_injuries
         }
         
         # Get AI analysis
         match["ai_analysis"] = await get_ai_analysis({
             "id": match_id,
+            "sport": "football",
             "home_team": match["home_team"],
             "away_team": match["away_team"],
             "league": match["league"],
             "home_form": match["home_form"],
             "away_form": match["away_form"],
-            "h2h": match["head_to_head"]
+            "h2h": match["head_to_head"],
+            "home_injuries": home_injuries,
+            "away_injuries": away_injuries,
+            "odds": fixture_odds
         })
         
         return match
     
     elif match_id.startswith("bb_"):
-        # Basketball match - EuroLeague
-        game_code = match_id[3:]
-        # EuroLeague API structure may vary
-        match = {
-            "id": match_id,
-            "sport": "basketball",
-            "league": "EuroLeague",
-            "league_code": "EURO",
-            "home_team": "Team A",
-            "away_team": "Team B",
-            "match_date": datetime.now(timezone.utc).isoformat(),
-            "status": "SCHEDULED",
-            "head_to_head": [],
-            "home_form": ["W", "W", "L", "W", "W"],
-            "away_form": ["L", "W", "D", "W", "L"],
-            "injuries": {"home": [], "away": []},
-        }
+        game_id = match_id[3:]
+        
+        # Fetch game details
+        game_data = await fetch_api_basketball(f"/games?id={game_id}")
+        games = game_data.get("response", [])
+        
+        if not games:
+            raise HTTPException(status_code=404, detail="Match not found")
+        
+        game = games[0]
+        league_id = str(game.get("league", {}).get("id", ""))
+        league_info = BASKETBALL_LEAGUES.get(league_id, {"name": "EuroLeague", "code": "EURO"})
+        
+        # Fetch odds
+        odds_data = await fetch_api_basketball(f"/odds?game={game_id}")
+        odds_response = odds_data.get("response", [])
+        game_odds = None
+        if odds_response:
+            bookmakers = odds_response[0].get("bookmakers", [])
+            if bookmakers:
+                bets = bookmakers[0].get("bets", [])
+                game_odds = {}
+                for bet in bets:
+                    bet_name = bet.get("name", "")
+                    values = bet.get("values", [])
+                    game_odds[bet_name] = {v.get("value"): v.get("odd") for v in values}
+        
+        match = parse_basketball_game(game, league_info, game_odds)
+        match["head_to_head"] = []
+        match["home_form"] = ["W", "W", "L", "W", "W"]  # Placeholder
+        match["away_form"] = ["L", "W", "W", "D", "L"]
+        match["injuries"] = {"home": [], "away": []}
         
         match["ai_analysis"] = await get_ai_analysis({
             "id": match_id,
+            "sport": "basketball",
             "home_team": match["home_team"],
             "away_team": match["away_team"],
             "league": match["league"],
             "home_form": match["home_form"],
             "away_form": match["away_form"],
-            "h2h": []
+            "h2h": [],
+            "odds": game_odds
         })
         
         return match
@@ -396,15 +584,12 @@ async def calculate_parlay(request: ParlayRequest):
     if not request.items:
         raise HTTPException(status_code=400, detail="No items in parlay")
     
-    # Calculate combined odds
     combined_odds = 1.0
     for item in request.items:
         combined_odds *= item.odds
     
-    # Calculate implied probability (simplified)
     probability = (1 / combined_odds) * 100
     
-    # Risk assessment based on number of legs and probability
     if len(request.items) <= 2 and probability > 20:
         risk = "Low"
     elif len(request.items) <= 4 and probability > 10:
@@ -412,7 +597,6 @@ async def calculate_parlay(request: ParlayRequest):
     else:
         risk = "High"
     
-    # Potential return on $10 bet
     potential_return = 10 * combined_odds
     
     return ParlayResponse(
@@ -423,44 +607,83 @@ async def calculate_parlay(request: ParlayRequest):
         risk_assessment=risk
     )
 
-@api_router.get("/standings/{league_code}")
-async def get_standings(league_code: str):
+@api_router.get("/standings/{league_id}")
+async def get_standings(league_id: str):
     """Get league standings"""
-    if league_code == "EURO":
-        # EuroLeague standings
-        data = await fetch_euroleague_data("/standings?seasonCode=E2024")
-        standings_list = data if isinstance(data, list) else data.get("standings", [])
-        
-        return {"standings": standings_list, "league": "EuroLeague"}
     
-    if league_code not in FOOTBALL_LEAGUES:
+    # Check if it's a basketball league
+    if league_id in BASKETBALL_LEAGUES or league_id == "EURO":
+        actual_id = "120" if league_id == "EURO" else league_id
+        data = await fetch_api_basketball(f"/standings?league={actual_id}&season=2024-2025")
+        standings_response = data.get("response", [])
+        
+        standings = []
+        if standings_response:
+            for group in standings_response:
+                for team_standing in group:
+                    team = team_standing.get("team", {})
+                    games = team_standing.get("games", {})
+                    standings.append({
+                        "position": team_standing.get("position", 0),
+                        "team": team.get("name", "Unknown"),
+                        "team_logo": team.get("logo", ""),
+                        "played": games.get("played", {}).get("all", 0),
+                        "won": games.get("win", {}).get("total", 0),
+                        "lost": games.get("lose", {}).get("total", 0),
+                        "drawn": 0,
+                        "goals_for": games.get("points", {}).get("for", 0),
+                        "goals_against": games.get("points", {}).get("against", 0),
+                        "goal_difference": 0,
+                        "points": team_standing.get("points", 0),
+                        "form": list(team_standing.get("form", "")[:5]) if team_standing.get("form") else []
+                    })
+        
+        return {
+            "standings": sorted(standings, key=lambda x: x["position"]),
+            "league": BASKETBALL_LEAGUES.get(actual_id, {}).get("name", "EuroLeague")
+        }
+    
+    # Football standings
+    actual_id = league_id
+    for lid, info in FOOTBALL_LEAGUES.items():
+        if info.get("code") == league_id:
+            actual_id = lid
+            break
+    
+    if actual_id not in FOOTBALL_LEAGUES:
         raise HTTPException(status_code=404, detail="League not found")
     
-    data = await fetch_football_data(f"/competitions/{league_code}/standings")
-    standings_data = data.get("standings", [])
+    data = await fetch_api_football(f"/standings?league={actual_id}&season=2024")
+    standings_response = data.get("response", [])
     
     standings = []
-    if standings_data and len(standings_data) > 0:
-        table = standings_data[0].get("table", [])
-        for team in table:
-            standings.append({
-                "position": team.get("position", 0),
-                "team": team.get("team", {}).get("name", "Unknown"),
-                "team_logo": team.get("team", {}).get("crest", ""),
-                "played": team.get("playedGames", 0),
-                "won": team.get("won", 0),
-                "drawn": team.get("draw", 0),
-                "lost": team.get("lost", 0),
-                "goals_for": team.get("goalsFor", 0),
-                "goals_against": team.get("goalsAgainst", 0),
-                "goal_difference": team.get("goalDifference", 0),
-                "points": team.get("points", 0),
-                "form": list(team.get("form", "")[:5]) if team.get("form") else []
-            })
+    if standings_response:
+        league_data = standings_response[0].get("league", {})
+        standings_list = league_data.get("standings", [])
+        
+        if standings_list:
+            table = standings_list[0] if isinstance(standings_list[0], list) else standings_list
+            for team_standing in table:
+                team = team_standing.get("team", {})
+                all_stats = team_standing.get("all", {})
+                standings.append({
+                    "position": team_standing.get("rank", 0),
+                    "team": team.get("name", "Unknown"),
+                    "team_logo": team.get("logo", ""),
+                    "played": all_stats.get("played", 0),
+                    "won": all_stats.get("win", 0),
+                    "drawn": all_stats.get("draw", 0),
+                    "lost": all_stats.get("lose", 0),
+                    "goals_for": all_stats.get("goals", {}).get("for", 0),
+                    "goals_against": all_stats.get("goals", {}).get("against", 0),
+                    "goal_difference": team_standing.get("goalsDiff", 0),
+                    "points": team_standing.get("points", 0),
+                    "form": list(team_standing.get("form", "")[:5]) if team_standing.get("form") else []
+                })
     
     return {
         "standings": standings,
-        "league": FOOTBALL_LEAGUES[league_code]["name"]
+        "league": FOOTBALL_LEAGUES[actual_id]["name"]
     }
 
 @api_router.post("/parlays")
@@ -473,7 +696,6 @@ async def save_parlay(request: ParlayRequest):
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
-    # Calculate odds
     combined_odds = 1.0
     for item in request.items:
         combined_odds *= item.odds
