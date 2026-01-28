@@ -531,71 +531,150 @@ export default function MatchDetail() {
             {/* AI Analysis Tab */}
             <TabsContent value="analysis" className="mt-6">
               {match.ai_analysis ? (
-                <Card className="best-bet-card bg-zinc-900 border-green-500/30">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <Zap className="w-5 h-5 text-green-500" />
-                      AI Prediction
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Prediction */}
-                    <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl">
+                <div className="space-y-6">
+                  <Card className="best-bet-card bg-zinc-900 border-green-500/30">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <Zap className="w-5 h-5 text-green-500" />
+                        AI Prediction
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {/* Prediction */}
+                      <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl">
+                        <div>
+                          <p className="text-sm text-zinc-500 mb-1">Prediction</p>
+                          <p className="font-heading text-2xl font-bold uppercase text-white">
+                            {match.ai_analysis.prediction}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-zinc-500 mb-1">Confidence</p>
+                          <p className="font-mono text-2xl font-bold text-green-500">
+                            {match.ai_analysis.confidence}%
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Confidence Bar */}
                       <div>
-                        <p className="text-sm text-zinc-500 mb-1">Prediction</p>
-                        <p className="font-heading text-2xl font-bold uppercase text-white">
-                          {match.ai_analysis.prediction}
+                        <div className="confidence-bar">
+                          <div 
+                            className="confidence-fill"
+                            style={{ width: `${match.ai_analysis.confidence}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Best Bet with Value Analysis */}
+                      <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Target className="w-5 h-5 text-green-500" />
+                          <span className="text-sm text-green-400 uppercase tracking-wide font-medium">Best Bet</span>
+                        </div>
+                        <p className="font-heading text-xl font-bold text-white">
+                          {match.ai_analysis.best_bet}
+                        </p>
+                        
+                        {/* Value Bet Analysis */}
+                        {match.ai_analysis.value_bet && (
+                          <div className={`mt-4 p-3 rounded-lg ${
+                            match.ai_analysis.value_bet.has_value 
+                              ? 'bg-yellow-500/20 border border-yellow-500/30' 
+                              : 'bg-zinc-800/50'
+                          }`}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Scale className="w-4 h-4 text-yellow-500" />
+                              <span className={`text-sm font-bold uppercase ${
+                                match.ai_analysis.value_bet.has_value ? 'text-yellow-400' : 'text-zinc-400'
+                              }`}>
+                                {match.ai_analysis.value_bet.value_rating}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div>
+                                <span className="text-zinc-500">Bookmaker:</span>
+                                <span className="text-white ml-2 font-mono">{match.ai_analysis.value_bet.bookmaker_odds}</span>
+                              </div>
+                              <div>
+                                <span className="text-zinc-500">Fair Odds:</span>
+                                <span className="text-green-400 ml-2 font-mono">{match.ai_analysis.value_bet.fair_odds}</span>
+                              </div>
+                              <div>
+                                <span className="text-zinc-500">Implied:</span>
+                                <span className="text-white ml-2">{match.ai_analysis.value_bet.implied_probability}%</span>
+                              </div>
+                              <div>
+                                <span className="text-zinc-500">AI Prob:</span>
+                                <span className="text-green-400 ml-2">{match.ai_analysis.value_bet.ai_probability}%</span>
+                              </div>
+                            </div>
+                            {match.ai_analysis.value_bet.has_value && (
+                              <p className="mt-3 text-sm text-yellow-300 border-t border-yellow-500/20 pt-3">
+                                The Bookie gives {match.ai_analysis.value_bet.bookmaker_odds}, but our analysis shows {match.ai_analysis.value_bet.ai_probability}% probability (fair odds: {match.ai_analysis.value_bet.fair_odds}). 
+                                Edge: +{match.ai_analysis.value_bet.edge}%
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Key Injuries */}
+                      {match.ai_analysis.key_injuries && match.ai_analysis.key_injuries.length > 0 && (
+                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                          <div className="flex items-center gap-2 mb-2">
+                            <AlertTriangle className="w-5 h-5 text-red-500" />
+                            <span className="text-sm text-red-400 uppercase tracking-wide font-medium">Key Absences</span>
+                          </div>
+                          <ul className="space-y-1">
+                            {match.ai_analysis.key_injuries.map((injury, i) => (
+                              <li key={i} className="text-zinc-300 text-sm">• {injury}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Reasoning */}
+                      <div>
+                        <p className="text-sm text-zinc-500 mb-2">Analysis</p>
+                        <p className="text-zinc-300 leading-relaxed">
+                          {match.ai_analysis.reasoning}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm text-zinc-500 mb-1">Confidence</p>
-                        <p className="font-mono text-2xl font-bold text-green-500">
-                          {match.ai_analysis.confidence}%
+
+                      {/* Risk Level */}
+                      <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl">
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-5 h-5 text-zinc-500" />
+                          <span className="text-zinc-400">Risk Level</span>
+                        </div>
+                        <span className={`font-bold uppercase ${getRiskColor(match.ai_analysis.risk_level)}`}>
+                          {match.ai_analysis.risk_level}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* News Summary Card */}
+                  {match.ai_analysis.news_summary && (
+                    <Card className="bg-zinc-900 border-zinc-800">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-white">
+                          <Newspaper className="w-5 h-5 text-blue-500" />
+                          Latest News & Updates
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-zinc-300 leading-relaxed text-sm whitespace-pre-wrap">
+                          {match.ai_analysis.news_summary}
                         </p>
-                      </div>
-                    </div>
-
-                    {/* Confidence Bar */}
-                    <div>
-                      <div className="confidence-bar">
-                        <div 
-                          className="confidence-fill"
-                          style={{ width: `${match.ai_analysis.confidence}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Best Bet */}
-                    <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Target className="w-5 h-5 text-green-500" />
-                        <span className="text-sm text-green-400 uppercase tracking-wide font-medium">Best Bet</span>
-                      </div>
-                      <p className="font-heading text-xl font-bold text-white">
-                        {match.ai_analysis.best_bet}
-                      </p>
-                    </div>
-
-                    {/* Reasoning */}
-                    <div>
-                      <p className="text-sm text-zinc-500 mb-2">Analysis</p>
-                      <p className="text-zinc-300 leading-relaxed">
-                        {match.ai_analysis.reasoning}
-                      </p>
-                    </div>
-
-                    {/* Risk Level */}
-                    <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl">
-                      <div className="flex items-center gap-2">
-                        <Shield className="w-5 h-5 text-zinc-500" />
-                        <span className="text-zinc-400">Risk Level</span>
-                      </div>
-                      <span className={`font-bold uppercase ${getRiskColor(match.ai_analysis.risk_level)}`}>
-                        {match.ai_analysis.risk_level}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
+                        <p className="text-xs text-zinc-500 mt-4">
+                          Sources: Eurohoops, Basketnews, Sport24, Gazzetta.gr, SDNA, Marca, AS
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               ) : (
                 <Card className="bg-zinc-900 border-zinc-800">
                   <CardContent className="p-8 text-center">
