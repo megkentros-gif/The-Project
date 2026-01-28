@@ -488,7 +488,7 @@ Respond ONLY with valid JSON:
 }"""
         ).with_model("openai", "gpt-5.2")
         
-        prompt = f"""Analyze this {sport} match for betting insights:
+        prompt = f"""As a Professional Football Analyst, analyze this {sport} match for betting insights:
 
 === MATCH INFO ===
 Home Team: {home_team}
@@ -496,24 +496,29 @@ Away Team: {away_team}
 League: {league}
 Date: {datetime.now().strftime('%B %d, %Y')}
 
-=== RECENT FORM ===
+=== VERIFIED RECENT FORM (from Marca, Gazzetta, BBC Sport) ===
 {home_team} Form: {match_data.get('home_form', 'Unknown')}
 {away_team} Form: {match_data.get('away_form', 'Unknown')}
 
-=== HEAD TO HEAD ===
+=== HEAD TO HEAD HISTORY ===
 {match_data.get('h2h', 'No recent meetings data')}
 
-=== LATEST NEWS & INJURIES ===
+=== TEAM NEWS & INJURIES (verified from sources) ===
 {news_summary}
 
-=== REPORTED INJURIES ===
+=== ADDITIONAL REPORTED INJURIES ===
 {home_team}: {match_data.get('home_injuries', 'None reported')}
 {away_team}: {match_data.get('away_injuries', 'None reported')}
 
-=== CURRENT ODDS ===
+=== CURRENT BOOKMAKER ODDS ===
 {match_data.get('odds', 'No odds available')}
 
-Based on ALL the above information, provide your expert analysis. Remember to calculate your OWN probability - don't just follow the bookmaker odds."""
+ANALYSIS REQUIREMENTS:
+1. Consider recent form (last 5 matches) from verified sources
+2. Factor in head-to-head history
+3. Account for key injuries/absences reported by Marca, Gazzetta, BBC Sport
+4. Calculate your OWN probability - DO NOT simply follow bookmaker odds
+5. Provide professional betting recommendation with risk assessment"""
         
         user_message = UserMessage(text=prompt)
         response = await chat.send_message(user_message)
