@@ -409,21 +409,33 @@ export default function MatchDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-                    <span className="text-white font-medium">Over 2.5</span>
-                    <div className="text-right">
-                      <span className="font-mono text-xl text-white">{overUnder.over || 'N/A'}</span>
-                      <span className="text-green-500 ml-2 text-lg">({overUnder.overProb}%)</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-red-500/10 rounded-lg border border-red-500/20">
-                    <span className="text-white font-medium">Under 2.5</span>
-                    <div className="text-right">
-                      <span className="font-mono text-xl text-white">{overUnder.under || 'N/A'}</span>
-                      <span className="text-red-500 ml-2 text-lg">({overUnder.underProb}%)</span>
-                    </div>
-                  </div>
+                <div className="space-y-2">
+                  {overUnder.over && (
+                    <OddsButton
+                      matchId={match.id}
+                      homeTeam={match.home_team}
+                      awayTeam={match.away_team}
+                      selection="Over 2.5"
+                      odds={overUnder.over}
+                      market="Over/Under"
+                      league={match.league}
+                      sport={match.sport}
+                      className="w-full justify-between"
+                    />
+                  )}
+                  {overUnder.under && (
+                    <OddsButton
+                      matchId={match.id}
+                      homeTeam={match.home_team}
+                      awayTeam={match.away_team}
+                      selection="Under 2.5"
+                      odds={overUnder.under}
+                      market="Over/Under"
+                      league={match.league}
+                      sport={match.sport}
+                      className="w-full justify-between"
+                    />
+                  )}
                 </div>
               </CardContent>
             </Card>
