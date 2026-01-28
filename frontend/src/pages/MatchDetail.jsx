@@ -887,15 +887,41 @@ export default function MatchDetail() {
 
           {/* Quick Actions */}
           <Card className="bg-zinc-900 border-zinc-800">
-            <CardContent className="p-4">
-              <Button 
-                className="w-full bg-green-500 hover:bg-green-600 text-black font-bold uppercase"
-                onClick={() => navigate("/parlay")}
-                data-testid="add-to-parlay-btn"
-              >
-                Add to Parlay
-                <ChevronRight className="w-4 h-4 ml-2" />
-              </Button>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-zinc-400">Quick Add to Parlay</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {matchWinner && matchWinner.home && (
+                <OddsButton
+                  matchId={match.id}
+                  homeTeam={match.home_team}
+                  awayTeam={match.away_team}
+                  selection={`${match.home_team} Win`}
+                  odds={matchWinner.home}
+                  market="1X2"
+                  league={match.league}
+                  sport={match.sport}
+                  className="w-full justify-between"
+                />
+              )}
+              {matchWinner && matchWinner.away && (
+                <OddsButton
+                  matchId={match.id}
+                  homeTeam={match.home_team}
+                  awayTeam={match.away_team}
+                  selection={`${match.away_team} Win`}
+                  odds={matchWinner.away}
+                  market="1X2"
+                  league={match.league}
+                  sport={match.sport}
+                  className="w-full justify-between"
+                />
+              )}
+              {!matchWinner && (
+                <p className="text-sm text-zinc-500 text-center py-4">
+                  No odds available for this match
+                </p>
+              )}
             </CardContent>
           </Card>
 
