@@ -72,7 +72,7 @@ class BettingAPITester:
             self.log_test("Root Endpoint", False, f"Unexpected response: {response}")
 
     def test_leagues_endpoint(self):
-        """Test leagues endpoint"""
+        """Test leagues endpoint - specifically check for basketball_euroleague"""
         success, response = self.make_request("GET", "/leagues")
         
         if not success:
@@ -88,10 +88,22 @@ class BettingAPITester:
             self.log_test("Leagues Endpoint", False, "'leagues' is not a list")
             return None
         
-        # Check for expected leagues
+        # Check for expected leagues including basketball_euroleague
         expected_leagues = ["Premier League", "La Liga", "Bundesliga", "Serie A", "Ligue 1", 
                           "Champions League", "Europa League", "EuroLeague"]
         found_leagues = [league.get("name", "") for league in leagues]
+        
+        # Specifically check for basketball_euroleague ID
+        basketball_euroleague_found = False
+        for league in leagues:
+            if league.get("id") == "basketball_euroleague" or league.get("name") == "EuroLeague":
+                basketball_euroleague_found = True
+                break
+        
+        if not basketball_euroleague_found:
+            self.log_test("Basketball EuroLeague Check", False, "basketball_euroleague not found in leagues")
+        else:
+            self.log_test("Basketball EuroLeague Check", True, "basketball_euroleague found in leagues")
         
         missing_leagues = [league for league in expected_leagues if league not in found_leagues]
         
