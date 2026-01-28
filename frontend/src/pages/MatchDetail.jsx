@@ -418,8 +418,11 @@ export default function MatchDetail() {
                   <p className="text-sm text-zinc-500 mb-2">{match.home_team}</p>
                   {match.injuries?.home && match.injuries.home.length > 0 ? (
                     <ul className="space-y-1">
-                      {match.injuries.home.map((player, i) => (
-                        <li key={i} className="text-sm text-zinc-300">{player}</li>
+                      {match.injuries.home.map((injury, i) => (
+                        <li key={i} className="text-sm text-zinc-300">
+                          {typeof injury === 'string' ? injury : injury.player || 'Unknown'}
+                          {injury.reason && <span className="text-zinc-500 ml-1">({injury.reason})</span>}
+                        </li>
                       ))}
                     </ul>
                   ) : (
@@ -430,8 +433,11 @@ export default function MatchDetail() {
                   <p className="text-sm text-zinc-500 mb-2">{match.away_team}</p>
                   {match.injuries?.away && match.injuries.away.length > 0 ? (
                     <ul className="space-y-1">
-                      {match.injuries.away.map((player, i) => (
-                        <li key={i} className="text-sm text-zinc-300">{player}</li>
+                      {match.injuries.away.map((injury, i) => (
+                        <li key={i} className="text-sm text-zinc-300">
+                          {typeof injury === 'string' ? injury : injury.player || 'Unknown'}
+                          {injury.reason && <span className="text-zinc-500 ml-1">({injury.reason})</span>}
+                        </li>
                       ))}
                     </ul>
                   ) : (
