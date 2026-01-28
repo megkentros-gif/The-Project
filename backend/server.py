@@ -342,33 +342,42 @@ def parse_football_data_match(match: Dict[str, Any], league_code: str, odds_map:
         "CANCELLED": "CANC"
     }
     
-    home_team = match.get("homeTeam", {}).get("name", "Unknown")
-    away_team = match.get("awayTeam", {}).get("name", "Unknown")
+    home_team = match.get("homeTeam", {}).get("name", "Unknown") or "Unknown"
+    away_team = match.get("awayTeam", {}).get("name", "Unknown") or "Unknown"
     
     # Try to find real odds
     match_odds = None
     has_odds = False
+    bookmakers_list = []
     
-    if odds_map:
+    if odds_map and home_team != "Unknown" and away_team != "Unknown":
         # Try different key formats to match
-        home_lower = home_team.lower().replace(" fc", "").replace(" f.c.", "").strip()
-        away_lower = away_team.lower().replace(" fc", "").replace(" f.c.", "").strip()
+        home_lower = home_team.lower().replace(" fc", "").replace(" f.c.", "").replace("fc ", "").strip()
+        away_lower = away_team.lower().replace(" fc", "").replace(" f.c.", "").replace("fc ", "").strip()
         
         # Try exact match first
         key = f"{home_lower}_{away_lower}"
         if key in odds_map:
             match_odds = odds_map[key]
             has_odds = True
+            bookmakers_list = match_odds.get("bookmakers", [])[:5]
         else:
             # Try partial matching
             for odds_key, odds_data in odds_map.items():
-                odds_home, odds_away = odds_key.split("_", 1)
-                # Check if team names partially match
-                if (odds_home in home_lower or home_lower in odds_home) and \
-                   (odds_away in away_lower or away_lower in odds_away):
-                    match_odds = odds_data
-                    has_odds = True
-                    break
+                parts = odds_key.split("_", 1)
+                if len(parts) == 2:
+                    odds_home, odds_away = parts
+                    # Check if team names partially match
+                    home_match = any(word in odds_home for word in home_lower.split() if len(word) > 3) or \
+                                 any(word in home_lower for word in odds_home.split() if len(word) > 3)
+                    away_match = any(word in odds_away for word in away_lower.split() if len(word) > 3) or \
+                                 any(word in away_lower for word in odds_away.split() if len(word) > 3)
+                    
+                    if home_match and away_match:
+                        match_odds = odds_data
+                        has_odds = True
+                        bookmakers_list = odds_data.get("bookmakers", [])[:5]
+                        break
     
     return {
         "id": f"fd_{match.get('id', '')}",
@@ -386,7 +395,7 @@ def parse_football_data_match(match: Dict[str, Any], league_code: str, odds_map:
         "away_score": match.get("score", {}).get("fullTime", {}).get("away"),
         "has_odds": has_odds,
         "odds": match_odds,
-        "bookmakers": match_odds.get("bookmakers", [])[:5] if match_odds else []
+        "bookmakers": bookmakers_list
     }
 
 def parse_basketball_game(game: Dict[str, Any], league_info: Dict[str, str]) -> Dict[str, Any]:
