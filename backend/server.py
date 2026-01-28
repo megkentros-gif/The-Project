@@ -343,6 +343,20 @@ Provide your expert betting analysis."""
             "risk_level": "unknown"
         }
 
+def normalize_team_name(name: str) -> str:
+    """Normalize team name for matching"""
+    if not name:
+        return ""
+    name = name.lower()
+    # Remove common suffixes
+    name = name.replace(" fc", "").replace(" f.c.", "").replace("fc ", "")
+    name = name.replace(" afc", "").replace(" sc", "").replace(" cf", "")
+    # Replace & with and
+    name = name.replace("&", "and")
+    # Remove extra spaces
+    name = " ".join(name.split())
+    return name.strip()
+
 def parse_football_data_match(match: Dict[str, Any], league_code: str, odds_map: Dict = None) -> Dict[str, Any]:
     """Parse a match from Football-Data.org format with real odds"""
     league_info = FOOTBALL_LEAGUES.get(league_code, {"name": "Unknown", "code": league_code})
@@ -366,33 +380,39 @@ def parse_football_data_match(match: Dict[str, Any], league_code: str, odds_map:
     bookmakers_list = []
     
     if odds_map and home_team != "Unknown" and away_team != "Unknown":
-        # Try different key formats to match
-        home_lower = home_team.lower().replace(" fc", "").replace(" f.c.", "").replace("fc ", "").strip()
-        away_lower = away_team.lower().replace(" fc", "").replace(" f.c.", "").replace("fc ", "").strip()
+        home_norm = normalize_team_name(home_team)
+        away_norm = normalize_team_name(away_team)
         
-        # Try exact match first
-        key = f"{home_lower}_{away_lower}"
-        if key in odds_map:
-            match_odds = odds_map[key]
-            has_odds = True
-            bookmakers_list = match_odds.get("bookmakers", [])[:5]
-        else:
-            # Try partial matching
-            for odds_key, odds_data in odds_map.items():
-                parts = odds_key.split("_", 1)
-                if len(parts) == 2:
-                    odds_home, odds_away = parts
-                    # Check if team names partially match
-                    home_match = any(word in odds_home for word in home_lower.split() if len(word) > 3) or \
-                                 any(word in home_lower for word in odds_home.split() if len(word) > 3)
-                    away_match = any(word in odds_away for word in away_lower.split() if len(word) > 3) or \
-                                 any(word in away_lower for word in odds_away.split() if len(word) > 3)
-                    
-                    if home_match and away_match:
-                        match_odds = odds_data
-                        has_odds = True
-                        bookmakers_list = odds_data.get("bookmakers", [])[:5]
-                        break
+        # Try to find matching odds
+        for odds_key, odds_data in odds_map.items():
+            parts = odds_key.split("_", 1)
+            if len(parts) == 2:
+                odds_home_norm = normalize_team_name(parts[0])
+                odds_away_norm = normalize_team_name(parts[1])
+                
+                # Check various matching strategies
+                home_match = (
+                    home_norm == odds_home_norm or
+                    home_norm in odds_home_norm or
+                    odds_home_norm in home_norm or
+                    # Check key words (e.g., "brighton" matches "brighton and hove albion")
+                    any(word in odds_home_norm for word in home_norm.split() if len(word) > 4) or
+                    any(word in home_norm for word in odds_home_norm.split() if len(word) > 4)
+                )
+                
+                away_match = (
+                    away_norm == odds_away_norm or
+                    away_norm in odds_away_norm or
+                    odds_away_norm in away_norm or
+                    any(word in odds_away_norm for word in away_norm.split() if len(word) > 4) or
+                    any(word in away_norm for word in odds_away_norm.split() if len(word) > 4)
+                )
+                
+                if home_match and away_match:
+                    match_odds = odds_data
+                    has_odds = True
+                    bookmakers_list = odds_data.get("bookmakers", [])[:5]
+                    break
     
     return {
         "id": f"fd_{match.get('id', '')}",
