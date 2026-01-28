@@ -86,8 +86,12 @@ class MatchBase(BaseModel):
 
 class ParlayItem(BaseModel):
     match_id: str
-    selection: str
-    odds: float
+    home_team: Optional[str] = None
+    away_team: Optional[str] = None
+    selection_name: Optional[str] = None
+    selection: Optional[str] = None  # Backward compatibility
+    price: Optional[float] = None
+    odds: Optional[float] = None  # Backward compatibility
     match_name: str
 
 class ParlayRequest(BaseModel):
