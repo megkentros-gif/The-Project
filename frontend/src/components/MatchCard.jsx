@@ -71,15 +71,36 @@ export default function MatchCard({ match, showAddToParlay = false, onAddToParla
     return originalLogo;
   };
 
-  // Extract odds from match data
+  // Extract odds from match data - supports both parsed and raw bookmaker formats
   const getOdds = () => {
     if (!match.odds) return null;
+    
+    // Try parsed format first (Match Winner object)
     const matchWinner = match.odds["Match Winner"] || match.odds["Home/Away"] || {};
-    return {
-      home: matchWinner["Home"] || matchWinner["1"],
-      draw: matchWinner["Draw"] || matchWinner["X"],
-      away: matchWinner["Away"] || matchWinner["2"]
-    };
+    if (matchWinner["Home"] || matchWinner["Away"]) {
+      return {
+        home: matchWinner["Home"] || matchWinner["1"],
+        draw: matchWinner["Draw"] || matchWinner["X"],
+        away: matchWinner["Away"] || matchWinner["2"]
+      };
+    }
+    
+    // Try raw bookmaker format from The Odds API
+    const rawBookmakers = match.odds.raw_bookmakers || match.bookmakers || [];
+    if (rawBookmakers.length > 0) {
+      const firstBookmaker = rawBookmakers[0];
+      const h2hMarket = firstBookmaker.markets?.find(m => m.key === 'h2h');
+      if (h2hMarket && h2hMarket.outcomes) {
+        const outcomes = h2hMarket.outcomes;
+        return {
+          home: outcomes[0]?.price?.toFixed(2),
+          draw: outcomes.length > 2 ? outcomes[1]?.price?.toFixed(2) : null,
+          away: outcomes.length > 2 ? outcomes[2]?.price?.toFixed(2) : outcomes[1]?.price?.toFixed(2)
+        };
+      }
+    }
+    
+    return null;
   };
 
   const odds = getOdds();
