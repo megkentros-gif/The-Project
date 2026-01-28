@@ -2,10 +2,11 @@ import { Link, useLocation } from "react-router-dom";
 import { Trophy, LayoutDashboard, ListOrdered, Layers } from "lucide-react";
 import { useParlay } from "@/context/ParlayContext";
 import { Badge } from "@/components/ui/badge";
+import ParlaySidebar from "@/components/ParlaySidebar";
 
 export default function Layout({ children }) {
   const location = useLocation();
-  const { getParlayCount } = useParlay();
+  const { getParlayCount, toggleSidebar } = useParlay();
   const parlayCount = getParlayCount();
   
   const navLinks = [
@@ -99,6 +100,24 @@ export default function Layout({ children }) {
       <main className="flex-1">
         {children}
       </main>
+
+      {/* Floating Parlay Button */}
+      {parlayCount > 0 && (
+        <button
+          onClick={toggleSidebar}
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-black font-bold rounded-full shadow-lg shadow-green-500/30 hover:shadow-green-500/50 transition-all hover:scale-105"
+          data-testid="floating-parlay-btn"
+        >
+          <Layers className="w-5 h-5" />
+          <span className="hidden sm:inline">Bet Slip</span>
+          <Badge className="bg-black text-green-500 text-xs min-w-[24px]">
+            {parlayCount}
+          </Badge>
+        </button>
+      )}
+
+      {/* Parlay Sidebar */}
+      <ParlaySidebar />
       
       {/* Footer */}
       <footer className="border-t border-zinc-800 py-8 mt-12">
