@@ -451,21 +451,33 @@ export default function MatchDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-                    <span className="text-white font-medium">Goal-Goal (Yes)</span>
-                    <div className="text-right">
-                      <span className="font-mono text-xl text-white">{btts.yes || 'N/A'}</span>
-                      <span className="text-green-500 ml-2 text-lg">({btts.yesProb}%)</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-red-500/10 rounded-lg border border-red-500/20">
-                    <span className="text-white font-medium">No Goal (No)</span>
-                    <div className="text-right">
-                      <span className="font-mono text-xl text-white">{btts.no || 'N/A'}</span>
-                      <span className="text-red-500 ml-2 text-lg">({btts.noProb}%)</span>
-                    </div>
-                  </div>
+                <div className="space-y-2">
+                  {btts.yes && (
+                    <OddsButton
+                      matchId={match.id}
+                      homeTeam={match.home_team}
+                      awayTeam={match.away_team}
+                      selection="BTTS Yes"
+                      odds={btts.yes}
+                      market="BTTS"
+                      league={match.league}
+                      sport={match.sport}
+                      className="w-full justify-between"
+                    />
+                  )}
+                  {btts.no && (
+                    <OddsButton
+                      matchId={match.id}
+                      homeTeam={match.home_team}
+                      awayTeam={match.away_team}
+                      selection="BTTS No"
+                      odds={btts.no}
+                      market="BTTS"
+                      league={match.league}
+                      sport={match.sport}
+                      className="w-full justify-between"
+                    />
+                  )}
                 </div>
               </CardContent>
             </Card>
