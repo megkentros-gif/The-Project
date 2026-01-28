@@ -323,19 +323,19 @@ async def search_sports_news(home_team: str, away_team: str, sport: str = "footb
         return "No news search available - API key not configured"
     
     try:
-        # Build search query based on sport type
+        # Determine which sources to search based on sport type
         if sport == "basketball" or "euroleague" in league.lower():
             # Basketball sources: Eurohoops, Basketnews, Sport24, SDNA
-            search_query = f"{home_team} {away_team} EuroLeague injury news latest updates Eurohoops Basketnews"
+            sources_hint = "Eurohoops, Basketnews, Sport24, Gazzetta.gr, SDNA"
         else:
             # Football sources: Marca, AS, Gazzetta, Sport24, SDNA
-            search_query = f"{home_team} {away_team} injury news team updates Marca AS Gazzetta"
+            sources_hint = "Marca, AS, Gazzetta.gr, SDNA"
         
         # Use Emergent LLM with web search capability
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"news-search-{datetime.now().timestamp()}",
-            system_message="""You are a sports news researcher. Search the web for the latest news about the teams mentioned.
+            system_message=f"""You are a sports news researcher. Search the web for the latest news about the teams mentioned.
             Focus on:
             1. Latest injury reports and player absences
             2. Last-minute lineup changes
@@ -343,13 +343,12 @@ async def search_sports_news(home_team: str, away_team: str, sport: str = "footb
             4. Recent form and momentum
             
             Provide a concise summary of the most important findings from sources like:
-            - For basketball: Eurohoops, Basketnews, Sport24, Gazzetta.gr, SDNA
-            - For football: Marca, AS, Gazzetta.gr, SDNA
+            {sources_hint}
             
             Format your response as a brief summary (max 300 words) with key points."""
         ).with_model("openai", "gpt-5.2").with_tools(enable_web_search=True)
         
-        user_message = UserMessage(text=f"Search for latest news and injury updates for {home_team} vs {away_team} in {league}. Today's date is {datetime.now().strftime('%B %d, %Y')}. Check Eurohoops, Basketnews, Sport24, Gazzetta.gr, SDNA, Marca, and AS for the most recent reports.")
+        user_message = UserMessage(text=f"Search for latest news and injury updates for {home_team} vs {away_team} in {league}. Today's date is {datetime.now().strftime('%B %d, %Y')}. Check {sources_hint} for the most recent reports.")
         
         response = await chat.send_message(user_message)
         return response if response else "No recent news found"
