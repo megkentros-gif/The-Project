@@ -18,15 +18,23 @@ const LEAGUE_FLAGS = {
   "Europe": "🇪🇺"
 };
 
-// League colors
+// League colors by ID
 const LEAGUE_COLORS = {
+  "39": "from-purple-500 to-blue-500",    // Premier League
+  "140": "from-red-500 to-yellow-500",    // La Liga
+  "78": "from-red-600 to-black",          // Bundesliga
+  "135": "from-blue-500 to-green-500",    // Serie A
+  "61": "from-blue-600 to-red-500",       // Ligue 1
+  "2": "from-blue-800 to-yellow-500",     // UCL
+  "3": "from-orange-500 to-red-600",      // UEL
+  "120": "from-orange-400 to-orange-600", // EuroLeague
   "PL": "from-purple-500 to-blue-500",
-  "PD": "from-red-500 to-yellow-500",
-  "BL1": "from-red-600 to-black",
+  "LALIGA": "from-red-500 to-yellow-500",
+  "BL": "from-red-600 to-black",
   "SA": "from-blue-500 to-green-500",
-  "FL1": "from-blue-600 to-red-500",
-  "CL": "from-blue-800 to-yellow-500",
-  "EL": "from-orange-500 to-red-600",
+  "L1": "from-blue-600 to-red-500",
+  "UCL": "from-blue-800 to-yellow-500",
+  "UEL": "from-orange-500 to-red-600",
   "EURO": "from-orange-400 to-orange-600"
 };
 
@@ -92,8 +100,8 @@ export default function Leagues() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {footballLeagues.map((league, index) => (
               <Link 
-                key={league.code} 
-                to={`/standings/${league.code}`}
+                key={league.id || league.code} 
+                to={`/standings/${league.id || league.code}`}
                 className="animate-fade-in"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
@@ -104,12 +112,12 @@ export default function Leagues() {
                   <CardContent className="p-6 relative">
                     {/* Gradient background */}
                     <div 
-                      className={`absolute inset-0 bg-gradient-to-br ${LEAGUE_COLORS[league.code] || 'from-zinc-700 to-zinc-800'} opacity-10 group-hover:opacity-20 transition-opacity`}
+                      className={`absolute inset-0 bg-gradient-to-br ${LEAGUE_COLORS[league.id] || LEAGUE_COLORS[league.code] || 'from-zinc-700 to-zinc-800'} opacity-10 group-hover:opacity-20 transition-opacity`}
                     />
                     
                     <div className="relative">
                       <div className="flex items-start justify-between mb-4">
-                        <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${LEAGUE_COLORS[league.code] || 'from-zinc-700 to-zinc-800'} flex items-center justify-center text-3xl`}>
+                        <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${LEAGUE_COLORS[league.id] || LEAGUE_COLORS[league.code] || 'from-zinc-700 to-zinc-800'} flex items-center justify-center text-3xl`}>
                           {LEAGUE_FLAGS[league.country] || "⚽"}
                         </div>
                         <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
@@ -158,8 +166,8 @@ export default function Leagues() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {basketballLeagues.map((league, index) => (
               <Link 
-                key={league.code} 
-                to={`/standings/${league.code}`}
+                key={league.id || league.code} 
+                to={`/standings/${league.id || league.code}`}
                 className="animate-fade-in"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
@@ -170,12 +178,12 @@ export default function Leagues() {
                   <CardContent className="p-6 relative">
                     {/* Gradient background */}
                     <div 
-                      className={`absolute inset-0 bg-gradient-to-br ${LEAGUE_COLORS[league.code] || 'from-orange-500 to-orange-700'} opacity-10 group-hover:opacity-20 transition-opacity`}
+                      className={`absolute inset-0 bg-gradient-to-br ${LEAGUE_COLORS[league.id] || LEAGUE_COLORS[league.code] || 'from-orange-500 to-orange-700'} opacity-10 group-hover:opacity-20 transition-opacity`}
                     />
                     
                     <div className="relative">
                       <div className="flex items-start justify-between mb-4">
-                        <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${LEAGUE_COLORS[league.code] || 'from-orange-500 to-orange-700'} flex items-center justify-center text-3xl`}>
+                        <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${LEAGUE_COLORS[league.id] || LEAGUE_COLORS[league.code] || 'from-orange-500 to-orange-700'} flex items-center justify-center text-3xl`}>
                           🏀
                         </div>
                         <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-white group-hover:translate-x-1 transition-all" />

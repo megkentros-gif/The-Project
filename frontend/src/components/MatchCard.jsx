@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Calendar, ChevronRight, Trophy, Dribbble } from "lucide-react";
+import { Calendar, ChevronRight, Trophy, Dribbble, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,14 +21,44 @@ export default function MatchCard({ match, showAddToParlay = false, onAddToParla
     switch (status) {
       case "LIVE":
       case "IN_PLAY":
+      case "1H":
+      case "2H":
+      case "HT":
         return "bg-green-500/20 text-green-400 border-green-500/30";
-      case "FINISHED":
+      case "FT":
+      case "AET":
+      case "PEN":
         return "bg-zinc-500/20 text-zinc-400 border-zinc-500/30";
       default:
         return "bg-blue-500/20 text-blue-400 border-blue-500/30";
     }
   };
 
+  const getStatusText = (status) => {
+    switch (status) {
+      case "NS": return "Upcoming";
+      case "1H": return "1st Half";
+      case "2H": return "2nd Half";
+      case "HT": return "Half Time";
+      case "FT": return "Full Time";
+      case "AET": return "After ET";
+      case "PEN": return "Penalties";
+      default: return status;
+    }
+  };
+
+  // Extract odds from match data
+  const getOdds = () => {
+    if (!match.odds) return null;
+    const matchWinner = match.odds["Match Winner"] || match.odds["Home/Away"] || {};
+    return {
+      home: matchWinner["Home"] || matchWinner["1"],
+      draw: matchWinner["Draw"] || matchWinner["X"],
+      away: matchWinner["Away"] || matchWinner["2"]
+    };
+  };
+
+  const odds = getOdds();
   const SportIcon = match.sport === "basketball" ? Dribbble : Trophy;
 
   return (
@@ -45,9 +75,17 @@ export default function MatchCard({ match, showAddToParlay = false, onAddToParla
               {match.league}
             </span>
           </div>
-          <Badge className={getStatusColor(match.status)}>
-            {match.status === "SCHEDULED" || match.status === "TIMED" ? "Upcoming" : match.status}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {match.has_odds && (
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                Odds
+              </Badge>
+            )}
+            <Badge className={getStatusColor(match.status)}>
+              {getStatusText(match.status)}
+            </Badge>
+          </div>
         </div>
 
         {/* Teams */}
@@ -110,6 +148,26 @@ export default function MatchCard({ match, showAddToParlay = false, onAddToParla
               </span>
             </div>
           </div>
+
+          {/* Odds Display */}
+          {odds && (odds.home || odds.away) && (
+            <div className="flex justify-center gap-2 mb-4">
+              <div className="flex-1 text-center p-2 bg-zinc-800/50 rounded-lg">
+                <span className="text-xs text-zinc-500 block">Home</span>
+                <span className="font-mono text-lg font-bold text-white">{odds.home || '-'}</span>
+              </div>
+              {match.sport === "football" && (
+                <div className="flex-1 text-center p-2 bg-zinc-800/50 rounded-lg">
+                  <span className="text-xs text-zinc-500 block">Draw</span>
+                  <span className="font-mono text-lg font-bold text-white">{odds.draw || '-'}</span>
+                </div>
+              )}
+              <div className="flex-1 text-center p-2 bg-zinc-800/50 rounded-lg">
+                <span className="text-xs text-zinc-500 block">Away</span>
+                <span className="font-mono text-lg font-bold text-white">{odds.away || '-'}</span>
+              </div>
+            </div>
+          )}
 
           {/* Date */}
           <div className="flex items-center justify-center gap-2 text-zinc-500 text-sm mb-4">
