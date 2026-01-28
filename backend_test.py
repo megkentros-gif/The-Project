@@ -624,6 +624,9 @@ class BettingAPITester:
         # Test extended markets structure
         self.test_extended_markets_structure()
         
+        # NEW: Test Top 4 High-Probability Picks functionality
+        self.test_top_picks_functionality()
+        
         # Test match details with enhanced AI analysis
         if matches:
             self.test_match_detail_endpoint(matches)
