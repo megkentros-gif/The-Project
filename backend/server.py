@@ -1225,11 +1225,6 @@ async def get_standings(league_code: str):
 async def save_parlay(request: ParlayRequest):
     """Save a parlay bet"""
     parlay_id = str(uuid.uuid4())
-    parlay_doc = {
-        "id": parlay_id,
-        "items": [item.model_dump() for item in request.items],
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
     
     combined_odds = 1.0
     for item in request.items:
@@ -1239,12 +1234,19 @@ async def save_parlay(request: ParlayRequest):
             raise HTTPException(status_code=400, detail="Missing odds/price for parlay item")
         combined_odds *= item_odds
     
-    parlay_doc["combined_odds"] = round(combined_odds, 2)
-    parlay_doc["probability"] = round((1 / combined_odds) * 100, 2)
+    parlay_doc = {
+        "id": parlay_id,
+        "items": [item.model_dump() for item in request.items],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "combined_odds": round(combined_odds, 2),
+        "probability": round((1 / combined_odds) * 100, 2)
+    }
     
-    await db.parlays.insert_one(parlay_doc)
+    # Insert into MongoDB (this will add _id field)
+    await db.parlays.insert_one(parlay_doc.copy())
     
-    return {"id": parlay_id, "message": "Parlay saved", **parlay_doc}
+    # Return response without MongoDB ObjectId
+    return {"id": parlay_id, "message": "Parlay saved successfully", **parlay_doc}
 
 @api_router.get("/parlays")
 async def get_parlays():
