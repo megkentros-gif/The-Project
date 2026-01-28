@@ -49,15 +49,15 @@ logger = logging.getLogger(__name__)
 cache = {}
 CACHE_TTL = 300  # 5 minutes
 
-# Football-Data.org League codes (free tier covers these)
+# Football-Data.org League codes mapped to The Odds API sport keys
 FOOTBALL_LEAGUES = {
-    "PL": {"name": "Premier League", "country": "England", "code": "PL"},
-    "PD": {"name": "La Liga", "country": "Spain", "code": "PD"},
-    "BL1": {"name": "Bundesliga", "country": "Germany", "code": "BL1"},
-    "SA": {"name": "Serie A", "country": "Italy", "code": "SA"},
-    "FL1": {"name": "Ligue 1", "country": "France", "code": "FL1"},
-    "CL": {"name": "Champions League", "country": "Europe", "code": "CL"},
-    "EC": {"name": "Europa League", "country": "Europe", "code": "EC"},
+    "PL": {"name": "Premier League", "country": "England", "code": "PL", "odds_key": "soccer_epl"},
+    "PD": {"name": "La Liga", "country": "Spain", "code": "PD", "odds_key": "soccer_spain_la_liga"},
+    "BL1": {"name": "Bundesliga", "country": "Germany", "code": "BL1", "odds_key": "soccer_germany_bundesliga"},
+    "SA": {"name": "Serie A", "country": "Italy", "code": "SA", "odds_key": "soccer_italy_serie_a"},
+    "FL1": {"name": "Ligue 1", "country": "France", "code": "FL1", "odds_key": "soccer_france_ligue_one"},
+    "CL": {"name": "Champions League", "country": "Europe", "code": "CL", "odds_key": "soccer_uefa_champs_league"},
+    "EC": {"name": "Europa League", "country": "Europe", "code": "EC", "odds_key": "soccer_uefa_europa_league"},
 }
 
 # EuroLeague Basketball
