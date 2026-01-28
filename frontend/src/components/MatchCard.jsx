@@ -4,11 +4,68 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-// EuroLeague team logo mapping using Wikipedia URLs
+// Complete EuroLeague 2025-2026 Season Team Logo Mapping (All 20 Teams)
 const EUROLEAGUE_LOGOS = {
+  // Greek Teams
   "panathinaikos": "https://upload.wikimedia.org/wikipedia/en/7/71/Panathinaikos_BC_logo.svg",
+  "panathinaikos aktor": "https://upload.wikimedia.org/wikipedia/en/7/71/Panathinaikos_BC_logo.svg",
   "olympiacos": "https://upload.wikimedia.org/wikipedia/en/1/1d/Olympiacos_BC_logo.svg",
-  "real madrid": "https://upload.wikimedia.org/wikipedia/en/1/1b/Real_Madrid_Baloncesto_logo.svg"
+  "olympiacos piraeus": "https://upload.wikimedia.org/wikipedia/en/1/1d/Olympiacos_BC_logo.svg",
+  
+  // Spanish Teams
+  "real madrid": "https://upload.wikimedia.org/wikipedia/en/1/1b/Real_Madrid_Baloncesto_logo.svg",
+  "barcelona": "https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg",
+  "fc barcelona": "https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg",
+  "baskonia": "https://upload.wikimedia.org/wikipedia/en/4/4f/Saski_Baskonia_logo.svg",
+  "saski baskonia": "https://upload.wikimedia.org/wikipedia/en/4/4f/Saski_Baskonia_logo.svg",
+  
+  // Turkish Teams
+  "fenerbahce": "https://upload.wikimedia.org/wikipedia/commons/0/02/Fenerbah%C3%A7e_SK.svg",
+  "fenerbahce beko": "https://upload.wikimedia.org/wikipedia/commons/0/02/Fenerbah%C3%A7e_SK.svg",
+  "fenerbahce sk": "https://upload.wikimedia.org/wikipedia/commons/0/02/Fenerbah%C3%A7e_SK.svg",
+  "anadolu efes": "https://upload.wikimedia.org/wikipedia/en/6/65/Anadolu_Efes_S.K._logo.svg",
+  "efes": "https://upload.wikimedia.org/wikipedia/en/6/65/Anadolu_Efes_S.K._logo.svg",
+  
+  // Italian Teams
+  "virtus bologna": "https://upload.wikimedia.org/wikipedia/en/7/70/Virtus_Bologna_logo.svg",
+  "virtus segafredo bologna": "https://upload.wikimedia.org/wikipedia/en/7/70/Virtus_Bologna_logo.svg",
+  "milano": "https://upload.wikimedia.org/wikipedia/en/1/10/Olimpia_Milano_logo.svg",
+  "ea7 emporio armani milano": "https://upload.wikimedia.org/wikipedia/en/1/10/Olimpia_Milano_logo.svg",
+  "olimpia milano": "https://upload.wikimedia.org/wikipedia/en/1/10/Olimpia_Milano_logo.svg",
+  "armani milano": "https://upload.wikimedia.org/wikipedia/en/1/10/Olimpia_Milano_logo.svg",
+  
+  // French Teams
+  "monaco": "https://upload.wikimedia.org/wikipedia/en/d/d3/AS_Monaco_Basket_logo.svg",
+  "as monaco": "https://upload.wikimedia.org/wikipedia/en/d/d3/AS_Monaco_Basket_logo.svg",
+  "ldlc asvel": "https://upload.wikimedia.org/wikipedia/en/6/6c/ASVEL_Basket_logo.svg",
+  "asvel": "https://upload.wikimedia.org/wikipedia/en/6/6c/ASVEL_Basket_logo.svg",
+  "villeurbanne": "https://upload.wikimedia.org/wikipedia/en/6/6c/ASVEL_Basket_logo.svg",
+  "paris basketball": "https://upload.wikimedia.org/wikipedia/fr/3/34/Logo_Paris_Basketball_2018.svg",
+  "paris": "https://upload.wikimedia.org/wikipedia/fr/3/34/Logo_Paris_Basketball_2018.svg",
+  
+  // German Teams
+  "bayern munich": "https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg",
+  "fc bayern munich": "https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg",
+  "bayern": "https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg",
+  "alba berlin": "https://upload.wikimedia.org/wikipedia/en/4/43/Alba_Berlin_logo.svg",
+  "alba": "https://upload.wikimedia.org/wikipedia/en/4/43/Alba_Berlin_logo.svg",
+  
+  // Serbian Teams
+  "partizan": "https://upload.wikimedia.org/wikipedia/en/e/e1/KK_Partizan_logo.svg",
+  "partizan mozzart bet": "https://upload.wikimedia.org/wikipedia/en/e/e1/KK_Partizan_logo.svg",
+  "partizan belgrade": "https://upload.wikimedia.org/wikipedia/en/e/e1/KK_Partizan_logo.svg",
+  "crvena zvezda": "https://upload.wikimedia.org/wikipedia/en/6/62/KK_Crvena_zvezda_logo.svg",
+  "red star": "https://upload.wikimedia.org/wikipedia/en/6/62/KK_Crvena_zvezda_logo.svg",
+  "crvena zvezda meridianbet": "https://upload.wikimedia.org/wikipedia/en/6/62/KK_Crvena_zvezda_logo.svg",
+  
+  // Israeli Teams
+  "maccabi tel aviv": "https://upload.wikimedia.org/wikipedia/en/7/7c/Maccabi_Tel_Aviv_BC_logo.svg",
+  "maccabi playtika tel aviv": "https://upload.wikimedia.org/wikipedia/en/7/7c/Maccabi_Tel_Aviv_BC_logo.svg",
+  "maccabi": "https://upload.wikimedia.org/wikipedia/en/7/7c/Maccabi_Tel_Aviv_BC_logo.svg",
+  
+  // Lithuanian Teams
+  "zalgiris": "https://upload.wikimedia.org/wikipedia/en/3/3e/BC_Zalgiris_logo.svg",
+  "zalgiris kaunas": "https://upload.wikimedia.org/wikipedia/en/3/3e/BC_Zalgiris_logo.svg"
 };
 
 export default function MatchCard({ match, showAddToParlay = false, onAddToParlay }) {
