@@ -213,7 +213,7 @@ export default function ParlayBuilder() {
               <div className="space-y-4 mt-4">
                 {/* Match Selection */}
                 <div>
-                  <label className="text-sm text-zinc-500 mb-2 block">Select Match</label>
+                  <label className="text-sm text-zinc-500 mb-2 block">Select Match ({matches.length} available)</label>
                   <Select 
                     value={selectedMatch?.id || ""} 
                     onValueChange={(id) => setSelectedMatch(matches.find(m => m.id === id))}
@@ -221,17 +221,16 @@ export default function ParlayBuilder() {
                     <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white" data-testid="match-select">
                       <SelectValue placeholder="Choose a match" />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-zinc-800 max-h-64">
-                      {matches.map((match) => (
-                        <SelectItem key={match.id} value={match.id}>
-                          <div className="flex items-center gap-2">
-                            <span>{match.home_team} vs {match.away_team}</span>
-                            <Badge className="bg-zinc-800 text-zinc-400 text-xs">
-                              {match.league}
-                            </Badge>
-                          </div>
-                        </SelectItem>
-                      ))}
+                    <SelectContent className="bg-zinc-900 border-zinc-800 max-h-64 z-50">
+                      {matches.length === 0 ? (
+                        <SelectItem value="none" disabled>No matches available</SelectItem>
+                      ) : (
+                        matches.map((match) => (
+                          <SelectItem key={match.id} value={match.id}>
+                            {match.home_team} vs {match.away_team} ({match.league})
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -243,13 +242,10 @@ export default function ParlayBuilder() {
                     <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white" data-testid="bet-type-select">
                       <SelectValue placeholder="Choose bet type" />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-zinc-800">
+                    <SelectContent className="bg-zinc-900 border-zinc-800 z-50">
                       {BET_TYPES.map((bet) => (
                         <SelectItem key={bet.value} value={bet.value}>
-                          <div className="flex items-center justify-between w-full">
-                            <span>{bet.label}</span>
-                            <span className="text-zinc-500 font-mono ml-4">@ {bet.defaultOdds}</span>
-                          </div>
+                          {bet.label} @ {bet.defaultOdds}
                         </SelectItem>
                       ))}
                     </SelectContent>
