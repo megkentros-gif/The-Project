@@ -28,9 +28,23 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 export default function Dashboard() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSport, setSelectedSport] = useState("all");
-  const [selectedLeague, setSelectedLeague] = useState("all");
+  // Initialize state from localStorage
+  const [selectedSport, setSelectedSport] = useState(() => {
+    return localStorage.getItem('betsmart_selectedSport') || "all";
+  });
+  const [selectedLeague, setSelectedLeague] = useState(() => {
+    return localStorage.getItem('betsmart_selectedLeague') || "all";
+  });
   const [leagues, setLeagues] = useState([]);
+
+  // Persist filter state to localStorage
+  useEffect(() => {
+    localStorage.setItem('betsmart_selectedSport', selectedSport);
+  }, [selectedSport]);
+
+  useEffect(() => {
+    localStorage.setItem('betsmart_selectedLeague', selectedLeague);
+  }, [selectedLeague]);
 
   useEffect(() => {
     fetchLeagues();
