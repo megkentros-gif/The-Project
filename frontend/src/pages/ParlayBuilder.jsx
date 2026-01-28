@@ -294,12 +294,12 @@ export default function ParlayBuilder() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <p className="text-white font-medium mb-1">{item.match_name}</p>
+                        <p className="text-white font-medium mb-1">{item.match_name || `${item.home_team} vs ${item.away_team}`}</p>
                         <div className="flex items-center gap-2">
                           <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                            {item.selection}
+                            {item.selection_name || item.selection}
                           </Badge>
-                          <span className="font-mono text-lg text-white">@ {item.odds.toFixed(2)}</span>
+                          <span className="font-mono text-lg text-white">@ {(item.price || item.odds)?.toFixed(2)}</span>
                         </div>
                       </div>
                       <Button
