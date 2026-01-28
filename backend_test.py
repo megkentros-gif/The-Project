@@ -114,35 +114,34 @@ class BettingAPITester:
         
         return leagues
 
-    def test_matches_endpoint(self):
-        """Test matches endpoint"""
-        success, response = self.make_request("GET", "/matches")
+    def test_premier_league_matches(self):
+        """Test GET /api/matches?league=PL - Should return football matches"""
+        success, response = self.make_request("GET", "/matches?league=PL")
         
         if not success:
-            self.log_test("Matches Endpoint", False, f"Request failed: {response}")
+            self.log_test("Premier League Matches", False, f"Request failed: {response}")
             return None
         
         if "matches" not in response:
-            self.log_test("Matches Endpoint", False, "Missing 'matches' key in response")
+            self.log_test("Premier League Matches", False, "Missing 'matches' key in response")
             return None
         
         matches = response["matches"]
         if not isinstance(matches, list):
-            self.log_test("Matches Endpoint", False, "'matches' is not a list")
+            self.log_test("Premier League Matches", False, "'matches' is not a list")
             return None
         
-        # Validate match structure
+        # Check if matches are football and Premier League
         if matches:
-            match = matches[0]
-            required_fields = ["id", "sport", "league", "home_team", "away_team", "match_date", "status"]
-            missing_fields = [field for field in required_fields if field not in match]
+            pl_matches = [m for m in matches if m.get("sport") == "football" and 
+                         (m.get("league") == "Premier League" or m.get("league_code") == "PL")]
             
-            if missing_fields:
-                self.log_test("Matches Endpoint", False, f"Missing fields in match: {missing_fields}")
+            if len(pl_matches) != len(matches):
+                self.log_test("Premier League Matches", False, f"Found non-PL matches: {len(matches) - len(pl_matches)}")
             else:
-                self.log_test("Matches Endpoint", True, f"Found {len(matches)} matches with valid structure")
+                self.log_test("Premier League Matches", True, f"Found {len(pl_matches)} Premier League matches")
         else:
-            self.log_test("Matches Endpoint", True, "No matches found (empty list is valid)")
+            self.log_test("Premier League Matches", True, "No Premier League matches found (valid if no scheduled matches)")
         
         return matches
 
