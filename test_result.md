@@ -195,6 +195,21 @@ backend:
         agent: "testing"
         comment: "TESTED SUCCESSFULLY: All 120 matches have quick_analysis field with correct structure. Fields verified: probability (0-95 range), best_pick (Home Win/Away Win/Draw), pick_type (home/away/draw), source (ai_estimated/odds). Found 99 matches with >=60% probability suitable for featured picks. API quota exhausted so using ai_estimated fallback logic which works correctly."
 
+  - task: "Parlay Builder Full Functionality"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Implemented POST /api/parlays endpoint for saving parlays with items array (match_id, selection_name, price, market). Updated POST /api/parlay/calculate to support both new 'price' field and legacy 'odds' field for backward compatibility. Fixed probability calculation to use market-implied odds instead of unrealistic 85% hash values."
+      - working: true
+        agent: "testing"
+        comment: "PARLAY BUILDER BACKEND TESTING COMPLETED - 9/9 tests passed. ✅ GET /api/matches: All matches have quick_analysis with realistic probabilities (40-95% range, NO 85% values), pick_odds field present. ✅ POST /api/parlays: Successfully saves parlays with new field structure (match_id, selection_name, price, market). ✅ GET /api/parlays: Retrieves saved parlays with correct structure. ✅ Probability Market Alignment: AI probabilities align reasonably with market odds (within 25% variance). ✅ Field Compatibility: Supports both new 'price' and legacy 'odds' fields. ✅ MongoDB Integration: Parlay persistence working correctly. Fixed ObjectId serialization issue."
+
 frontend:
   - task: "Value Bet UI Display"
     implemented: true
