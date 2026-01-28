@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-01-28T01:00:13.458633",
+  "total_tests": 10,
+  "passed_tests": 10,
+  "failed_tests": 0,
+  "success_rate": 100.0,
+  "test_results": [
+    {
+      "test": "Root Endpoint",
+      "success": true,
+      "details": "API is accessible",
+      "timestamp": "2026-01-28T00:59:57.658828"
+    },
+    {
+      "test": "Leagues Endpoint",
+      "success": true,
+      "details": "Found 8 leagues",
+      "timestamp": "2026-01-28T00:59:57.701341"
+    },
+    {
+      "test": "Matches Endpoint",
+      "success": true,
+      "details": "Found 45 matches with valid structure",
+      "timestamp": "2026-01-28T01:00:00.746969"
+    },
+    {
+      "test": "Match Detail AI Analysis",
+      "success": true,
+      "details": "AI analysis structure is valid",
+      "timestamp": "2026-01-28T01:00:09.206501"
+    },
+    {
+      "test": "Match Detail Endpoint",
+      "success": true,
+      "details": "Match detail loaded with fields: ['head_to_head', 'home_form', 'away_form', 'injuries']",
+      "timestamp": "2026-01-28T01:00:09.206517"
+    },
+    {
+      "test": "Standings Endpoint",
+      "success": true,
+      "details": "Standings loaded with 20 teams",
+      "timestamp": "2026-01-28T01:00:09.284160"
+    },
+    {
+      "test": "Parlay Calculate Endpoint",
+      "success": true,
+      "details": "Calculation correct: 3.24",
+      "timestamp": "2026-01-28T01:00:09.328941"
+    },
+    {
+      "test": "League Filter",
+      "success": true,
+      "details": "League filter working: 16 matches",
+      "timestamp": "2026-01-28T01:00:10.369140"
+    },
+    {
+      "test": "Sport Filter (Football)",
+      "success": true,
+      "details": "Football filter working: 45 matches",
+      "timestamp": "2026-01-28T01:00:13.415030"
+    },
+    {
+      "test": "Sport Filter (Basketball)",
+      "success": true,
+      "details": "Basketball filter working: 0 matches",
+      "timestamp": "2026-01-28T01:00:13.458445"
+    }
+  ],
+  "failed_details": []
+}
