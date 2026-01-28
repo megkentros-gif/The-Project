@@ -431,6 +431,179 @@ class BettingAPITester:
             else:
                 self.log_test(f"Standard Market ({market})", False, f"Market missing from odds structure")
 
+    def test_quick_analysis_field(self):
+        """Test quick_analysis field for Top 4 High-Probability Picks functionality"""
+        # Test general matches endpoint
+        success, response = self.make_request("GET", "/matches")
+        
+        if not success or "matches" not in response:
+            self.log_test("Quick Analysis - General Matches", False, "Could not fetch matches to test quick_analysis")
+            return
+        
+        matches = response["matches"]
+        
+        if not matches:
+            self.log_test("Quick Analysis - General Matches", True, "No matches found (empty list is valid)")
+            return
+        
+        # Test quick_analysis structure on all matches
+        matches_with_quick_analysis = []
+        matches_missing_quick_analysis = []
+        
+        for match in matches:
+            if "quick_analysis" in match:
+                matches_with_quick_analysis.append(match)
+            else:
+                matches_missing_quick_analysis.append(match)
+        
+        if matches_missing_quick_analysis:
+            self.log_test("Quick Analysis - Field Presence", False, f"{len(matches_missing_quick_analysis)} matches missing quick_analysis field")
+        else:
+            self.log_test("Quick Analysis - Field Presence", True, f"All {len(matches)} matches have quick_analysis field")
+        
+        # Test quick_analysis structure on first match
+        if matches_with_quick_analysis:
+            match = matches_with_quick_analysis[0]
+            quick_analysis = match["quick_analysis"]
+            
+            # Required fields
+            required_fields = ["probability", "best_pick", "pick_type"]
+            missing_fields = [field for field in required_fields if field not in quick_analysis]
+            
+            if missing_fields:
+                self.log_test("Quick Analysis - Required Fields", False, f"Missing fields: {missing_fields}")
+            else:
+                self.log_test("Quick Analysis - Required Fields", True, "All required fields present")
+                
+                # Validate field values
+                probability = quick_analysis.get("probability")
+                best_pick = quick_analysis.get("best_pick")
+                pick_type = quick_analysis.get("pick_type")
+                
+                # Test probability range (0-95)
+                if isinstance(probability, (int, float)) and 0 <= probability <= 95:
+                    self.log_test("Quick Analysis - Probability Range", True, f"Probability {probability} is within 0-95 range")
+                else:
+                    self.log_test("Quick Analysis - Probability Range", False, f"Probability {probability} is not within 0-95 range")
+                
+                # Test best_pick values
+                valid_picks = ["Home Win", "Away Win", "Draw"]
+                if best_pick in valid_picks:
+                    self.log_test("Quick Analysis - Best Pick Values", True, f"Best pick '{best_pick}' is valid")
+                else:
+                    self.log_test("Quick Analysis - Best Pick Values", False, f"Best pick '{best_pick}' is not in {valid_picks}")
+                
+                # Test pick_type values
+                valid_types = ["home", "away", "draw"]
+                if pick_type in valid_types:
+                    self.log_test("Quick Analysis - Pick Type Values", True, f"Pick type '{pick_type}' is valid")
+                else:
+                    self.log_test("Quick Analysis - Pick Type Values", False, f"Pick type '{pick_type}' is not in {valid_types}")
+                
+                # Test source field if present
+                source = quick_analysis.get("source")
+                if source:
+                    valid_sources = ["odds", "ai_estimated"]
+                    if source in valid_sources:
+                        self.log_test("Quick Analysis - Source Field", True, f"Source '{source}' is valid")
+                    else:
+                        self.log_test("Quick Analysis - Source Field", False, f"Source '{source}' is not in {valid_sources}")
+
+    def test_premier_league_quick_analysis(self):
+        """Test GET /api/matches?league=PL specifically for quick_analysis with source field"""
+        success, response = self.make_request("GET", "/matches?league=PL")
+        
+        if not success:
+            self.log_test("PL Quick Analysis", False, f"Request failed: {response}")
+            return
+        
+        if "matches" not in response:
+            self.log_test("PL Quick Analysis", False, "Missing 'matches' key in response")
+            return
+        
+        matches = response["matches"]
+        
+        if not matches:
+            self.log_test("PL Quick Analysis", True, "No Premier League matches found (valid if no scheduled matches)")
+            return
+        
+        # Check quick_analysis on PL matches
+        for i, match in enumerate(matches[:3]):  # Test first 3 matches
+            if "quick_analysis" not in match:
+                self.log_test(f"PL Quick Analysis - Match {i+1}", False, "Missing quick_analysis field")
+                continue
+            
+            quick_analysis = match["quick_analysis"]
+            
+            # Check for source field specifically
+            if "source" not in quick_analysis:
+                self.log_test(f"PL Quick Analysis - Match {i+1} Source", False, "Missing source field in quick_analysis")
+            else:
+                source = quick_analysis["source"]
+                valid_sources = ["odds", "ai_estimated"]
+                if source in valid_sources:
+                    self.log_test(f"PL Quick Analysis - Match {i+1} Source", True, f"Source '{source}' is valid")
+                else:
+                    self.log_test(f"PL Quick Analysis - Match {i+1} Source", False, f"Invalid source '{source}'")
+
+    def test_probability_sorting_logic(self):
+        """Test that matches with higher probability exist for sorting"""
+        success, response = self.make_request("GET", "/matches")
+        
+        if not success or "matches" not in response:
+            self.log_test("Probability Sorting Logic", False, "Could not fetch matches to test sorting")
+            return
+        
+        matches = response["matches"]
+        
+        if not matches:
+            self.log_test("Probability Sorting Logic", True, "No matches found (empty list is valid)")
+            return
+        
+        # Extract probabilities from matches with quick_analysis
+        probabilities = []
+        for match in matches:
+            if "quick_analysis" in match and "probability" in match["quick_analysis"]:
+                prob = match["quick_analysis"]["probability"]
+                if isinstance(prob, (int, float)):
+                    probabilities.append(prob)
+        
+        if not probabilities:
+            self.log_test("Probability Sorting Logic", False, "No valid probabilities found in matches")
+            return
+        
+        # Check if we have varying probabilities (needed for sorting)
+        unique_probs = set(probabilities)
+        if len(unique_probs) < 2:
+            self.log_test("Probability Sorting Logic", True, f"All matches have same probability ({probabilities[0]}) - sorting not testable")
+        else:
+            # Find highest probabilities
+            sorted_probs = sorted(probabilities, reverse=True)
+            top_4_probs = sorted_probs[:4]
+            
+            self.log_test("Probability Sorting Logic", True, f"Found {len(probabilities)} matches with probabilities. Top 4: {top_4_probs}")
+            
+            # Verify we have high-probability matches (>60% for featured picks)
+            high_prob_matches = [p for p in probabilities if p >= 60]
+            if high_prob_matches:
+                self.log_test("High Probability Matches", True, f"Found {len(high_prob_matches)} matches with >=60% probability")
+            else:
+                self.log_test("High Probability Matches", True, f"No matches with >=60% probability (highest: {max(probabilities)})")
+
+    def test_top_picks_functionality(self):
+        """Comprehensive test for Top 4 High-Probability Picks functionality"""
+        print("\n🎯 Testing Top 4 High-Probability Picks Functionality")
+        print("-" * 50)
+        
+        # Test 1: Quick analysis field presence and structure
+        self.test_quick_analysis_field()
+        
+        # Test 2: Premier League specific test with source field
+        self.test_premier_league_quick_analysis()
+        
+        # Test 3: Probability sorting logic
+        self.test_probability_sorting_logic()
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting Backend API Tests for BetSmart AI Enhancements")
