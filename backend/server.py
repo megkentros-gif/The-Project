@@ -524,19 +524,16 @@ async def get_matches(
             
             await asyncio.sleep(0.1)  # Small delay to respect rate limits
     
-    # Fetch basketball matches
+    # Fetch basketball matches from The Odds API
     if sport is None or sport == "basketball":
-        if league is None or league in BASKETBALL_LEAGUES or league == "EURO" or league == "120":
+        if league is None or league in BASKETBALL_LEAGUES or league == "EURO" or league == "basketball_euroleague":
             for league_id, league_info in BASKETBALL_LEAGUES.items():
-                games_data = await fetch_api_basketball(f"/games?league={league_id}&season=2024-2025")
-                games = games_data.get("response", [])
-                
-                # Get only upcoming games (NS status)
-                upcoming_games = [g for g in games if g.get("status", {}).get("short") == "NS"]
-                
-                for game in upcoming_games[:10]:
-                    parsed = parse_basketball_game(game, league_info)
-                    all_matches.append(parsed)
+                odds_key = league_info.get("odds_key", "")
+                if odds_key:
+                    # Fetch basketball games directly from The Odds API
+                    basketball_odds = await fetch_basketball_from_odds_api(odds_key)
+                    for game in basketball_odds:
+                        all_matches.append(game)
     
     # Sort by date
     all_matches.sort(key=lambda x: x.get("match_date", ""))
