@@ -3,6 +3,7 @@ import { Calendar, ChevronRight, Trophy, Dribbble, TrendingUp } from "lucide-rea
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import OddsButton from "@/components/OddsButton";
 
 // Complete EuroLeague 2025-2026 Season Team Logo Mapping (All 20 Teams)
 const EUROLEAGUE_LOGOS = {
@@ -253,23 +254,47 @@ export default function MatchCard({ match, showAddToParlay = false, onAddToParla
             </div>
           </div>
 
-          {/* Odds Display */}
+          {/* Clickable Odds Display */}
           {odds && (odds.home || odds.away) && (
             <div className="flex justify-center gap-2 mb-4">
-              <div className="flex-1 text-center p-2 bg-zinc-800/50 rounded-lg">
-                <span className="text-xs text-zinc-500 block">Home</span>
-                <span className="font-mono text-lg font-bold text-white">{odds.home || '-'}</span>
-              </div>
-              {match.sport === "football" && (
-                <div className="flex-1 text-center p-2 bg-zinc-800/50 rounded-lg">
-                  <span className="text-xs text-zinc-500 block">Draw</span>
-                  <span className="font-mono text-lg font-bold text-white">{odds.draw || '-'}</span>
-                </div>
+              <OddsButton
+                matchId={match.id}
+                homeTeam={match.home_team}
+                awayTeam={match.away_team}
+                selection="Home"
+                odds={odds.home}
+                market="1X2"
+                league={match.league}
+                sport={match.sport}
+                variant="compact"
+                className="flex-1"
+              />
+              {match.sport === "football" && odds.draw && (
+                <OddsButton
+                  matchId={match.id}
+                  homeTeam={match.home_team}
+                  awayTeam={match.away_team}
+                  selection="Draw"
+                  odds={odds.draw}
+                  market="1X2"
+                  league={match.league}
+                  sport={match.sport}
+                  variant="compact"
+                  className="flex-1"
+                />
               )}
-              <div className="flex-1 text-center p-2 bg-zinc-800/50 rounded-lg">
-                <span className="text-xs text-zinc-500 block">Away</span>
-                <span className="font-mono text-lg font-bold text-white">{odds.away || '-'}</span>
-              </div>
+              <OddsButton
+                matchId={match.id}
+                homeTeam={match.home_team}
+                awayTeam={match.away_team}
+                selection="Away"
+                odds={odds.away}
+                market="1X2"
+                league={match.league}
+                sport={match.sport}
+                variant="compact"
+                className="flex-1"
+              />
             </div>
           )}
 
@@ -291,16 +316,6 @@ export default function MatchCard({ match, showAddToParlay = false, onAddToParla
                 <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            
-            {showAddToParlay && (
-              <Button
-                onClick={() => onAddToParlay && onAddToParlay(match)}
-                className="bg-green-500 hover:bg-green-600 text-black"
-                data-testid={`add-to-parlay-${match.id}`}
-              >
-                + Parlay
-              </Button>
-            )}
           </div>
         </div>
       </CardContent>
