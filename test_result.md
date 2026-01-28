@@ -330,3 +330,41 @@ agent_communication:
       
       📋 SUMMARY:
       The "Top 4 High-Probability Picks" backend functionality is FULLY IMPLEMENTED and WORKING CORRECTLY. All required fields are present with proper validation. The frontend can now sort matches by probability and display the top 4 picks.
+  - agent: "testing"
+    message: |
+      PARLAY BUILDER BACKEND TESTING COMPLETED - ALL TESTS PASSED ✅
+      
+      🎯 COMPREHENSIVE PARLAY BUILDER TESTING RESULTS:
+      
+      ✅ GET /api/matches - Quick Analysis Verification:
+      - All matches include quick_analysis field with realistic probabilities (40-95% range)
+      - NO unrealistic 85% hash-based values found (fixed successfully)
+      - pick_odds field present in matches with odds data
+      - Source field correctly returns "ai_estimated" (fixed from "estimated")
+      - Probability range validation: All values within expected 0-95 range
+      - Market alignment: AI probabilities reasonably align with bookmaker odds
+      
+      ✅ POST /api/parlays - Parlay Save Functionality:
+      - Successfully saves parlays with new field structure (match_id, selection_name, price, market)
+      - Returns proper response with parlay ID and calculated odds/probability
+      - MongoDB integration working correctly (fixed ObjectId serialization issue)
+      - GET /api/parlays retrieves saved parlays with correct structure
+      
+      ✅ Field Structure Compatibility:
+      - POST /api/parlay/calculate supports both new 'price' and legacy 'odds' fields
+      - Backward compatibility maintained for existing parlay calculations
+      - New parlay items include: match_id, home_team, away_team, selection_name, price, market
+      
+      ✅ Probability Calculation Improvements:
+      - Market-implied probability calculation (respects bookmaker odds)
+      - Home favorite odds: 1.5-2.0 range with 50-67% probability
+      - Away favorite odds: 2.0-2.5 range with appropriate probability
+      - Predictions MATCH market odds (no contradictions)
+      
+      🔧 FIXES APPLIED DURING TESTING:
+      - Fixed POST /api/parlays ObjectId serialization error
+      - Updated source field from "estimated" to "ai_estimated" for consistency
+      - Added support for both 'price' and 'odds' fields in parlay calculations
+      
+      📊 FINAL RESULTS: 9/9 Parlay Builder tests passed
+      The Parlay Builder backend functionality is FULLY WORKING and ready for frontend integration.
