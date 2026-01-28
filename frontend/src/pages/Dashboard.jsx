@@ -318,17 +318,70 @@ export default function Dashboard() {
           ))}
         </div>
       ) : matches.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {matches.map((match, index) => (
-            <div 
-              key={match.id} 
-              className="animate-fade-in"
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <MatchCard match={match} />
+        <>
+          {/* Featured Picks Section - Top 4 High Probability */}
+          {topPicks.length > 0 && (
+            <div className="mb-10">
+              {/* Section Header */}
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center">
+                    <Flame className="w-5 h-5 text-white animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="font-heading text-xl font-bold uppercase text-white flex items-center gap-2">
+                      Top 4 High-Probability Picks
+                      <Badge className="bg-red-500/30 text-red-400 border-red-500/50 animate-pulse">
+                        <Flame className="w-3 h-3 mr-1" /> HOT
+                      </Badge>
+                    </h3>
+                    <p className="text-xs text-zinc-500">AI-recommended picks with highest confidence</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Featured Picks Container */}
+              <div className="relative">
+                {/* Gradient Background Glow Effect */}
+                <div className="absolute -inset-4 bg-gradient-to-r from-red-900/20 via-red-600/10 to-red-900/20 rounded-3xl blur-xl" />
+                
+                <div className="relative bg-gradient-to-r from-red-900/30 to-red-800/20 rounded-2xl border border-red-500/30 p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {topPicks.map((match, index) => (
+                      <div 
+                        key={match.id} 
+                        className="animate-fade-in"
+                        style={{ animationDelay: `${index * 100}ms` }}
+                      >
+                        <FeaturedPickCard match={match} rank={index + 1} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
+          )}
+
+          {/* Regular Matches Section */}
+          {remainingMatches.length > 0 && (
+            <>
+              <h3 className="font-heading text-lg font-bold uppercase text-zinc-400 mb-4 mt-8">
+                All Matches
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {remainingMatches.map((match, index) => (
+                  <div 
+                    key={match.id} 
+                    className="animate-fade-in"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <MatchCard match={match} />
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </>
       ) : (
         <Card className="bg-zinc-900 border-zinc-800">
           <CardContent className="p-12 text-center">
