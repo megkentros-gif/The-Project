@@ -77,6 +77,27 @@ export default function Dashboard() {
     }
   };
 
+  // Handle sport filter change with basketball/euroleague special handling
+  const handleSportChange = (sport) => {
+    setSelectedSport(sport);
+    // If basketball or euroleague is selected, enforce the correct API key
+    if (sport === 'basketball' || sport === 'euroleague') {
+      setSelectedLeague('basketball_euroleague');
+    } else if (sport === 'all') {
+      setSelectedLeague('all');
+    }
+  };
+
+  // Handle league filter change with basketball/euroleague special handling
+  const handleLeagueChange = (league) => {
+    // If a basketball league is selected, ensure correct API key
+    if (league === 'basketball_euroleague' || league === 'EURO') {
+      setSelectedLeague('basketball_euroleague');
+    } else {
+      setSelectedLeague(league);
+    }
+  };
+
   const formatDate = (dateStr) => {
     if (!dateStr) return "TBD";
     const date = new Date(dateStr);
