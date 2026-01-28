@@ -1,13 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
 import { Trophy, LayoutDashboard, ListOrdered, Layers } from "lucide-react";
+import { useParlay } from "@/context/ParlayContext";
+import { Badge } from "@/components/ui/badge";
 
 export default function Layout({ children }) {
   const location = useLocation();
+  const { getParlayCount } = useParlay();
+  const parlayCount = getParlayCount();
   
   const navLinks = [
     { to: "/", label: "Dashboard", icon: LayoutDashboard },
     { to: "/leagues", label: "Leagues", icon: Trophy },
-    { to: "/parlay", label: "Parlay Builder", icon: Layers },
+    { to: "/parlay", label: "Parlay Builder", icon: Layers, badge: parlayCount },
   ];
   
   const isActive = (path) => {
