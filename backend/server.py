@@ -544,7 +544,15 @@ async def get_match_detail(match_id: str):
             raise HTTPException(status_code=404, detail="Match not found")
         
         league_code = data.get("competition", {}).get("code", "PL")
-        match = parse_football_data_match(data, league_code)
+        league_info = FOOTBALL_LEAGUES.get(league_code, {"name": "Unknown", "code": league_code, "odds_key": ""})
+        
+        # Fetch real odds for this league
+        odds_key = league_info.get("odds_key", "")
+        odds_map = {}
+        if odds_key:
+            odds_map = await fetch_real_odds(odds_key)
+        
+        match = parse_football_data_match(data, league_code, odds_map)
         
         # Fetch head to head
         home_team_id = data.get("homeTeam", {}).get("id")
