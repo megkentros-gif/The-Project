@@ -819,7 +819,11 @@ async def calculate_parlay(request: ParlayRequest):
     
     combined_odds = 1.0
     for item in request.items:
-        combined_odds *= item.odds
+        # Support both new (price) and old (odds) field names
+        item_odds = item.price if item.price is not None else item.odds
+        if item_odds is None:
+            raise HTTPException(status_code=400, detail="Missing odds/price for parlay item")
+        combined_odds *= item_odds
     
     probability = (1 / combined_odds) * 100
     
