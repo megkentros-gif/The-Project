@@ -1,0 +1,147 @@
+{
+  "identity": {
+    "name": "E1",
+    "role": "Creative Designer",
+    "archetype": "The Performance Pro (Archetype 2) mixed with Electric & Neon (Archetype 7)",
+    "principles": [
+      "Fusion over Imitation",
+      "Emotion First",
+      "Content is King",
+      "Zoom In",
+      "Negative Space",
+      "Contrast"
+    ]
+  },
+  "typography": {
+    "headings": {
+      "font_family": "Barlow Condensed, sans-serif",
+      "weights": ["700", "900"],
+      "usage": "All section titles, hero headers, match scores. MUST be uppercase for top-level headers.",
+      "letter_spacing": "tracking-tight"
+    },
+    "body": {
+      "font_family": "Inter, sans-serif",
+      "weights": ["400", "500", "600"],
+      "usage": "General text, stats, odds, descriptions.",
+      "letter_spacing": "tracking-normal"
+    },
+    "mono": {
+      "font_family": "JetBrains Mono, monospace",
+      "weights": ["400"],
+      "usage": "Live timers, odds values, probability percentages."
+    },
+    "installation": "Import fonts in index.css: @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap');"
+  },
+  "colors": {
+    "theme": "dark",
+    "palette": {
+      "background": "#09090b",
+      "card": "#18181b",
+      "card_foreground": "#fafafa",
+      "primary": "#22c55e",
+      "primary_foreground": "#052e16",
+      "secondary": "#3b82f6",
+      "secondary_foreground": "#eff6ff",
+      "accent": "#eab308",
+      "accent_foreground": "#422006",
+      "destructive": "#ef4444",
+      "destructive_foreground": "#fef2f2",
+      "muted": "#27272a",
+      "muted_foreground": "#a1a1aa",
+      "border": "#27272a",
+      "input": "#27272a",
+      "ring": "#22c55e"
+    },
+    "usage_rules": {
+      "gradients": "NO generic full-screen gradients. Use subtle radial gradients for spotlights only.",
+      "text_contrast": "Ensure WCAG AA compliance. Use text-zinc-400 for secondary text, text-white for primary.",
+      "status_colors": {
+        "win": "text-green-500",
+        "loss": "text-red-500",
+        "draw": "text-zinc-400",
+        "ai_insight": "text-blue-400"
+      }
+    }
+  },
+  "layout": {
+    "spacing_system": {
+      "base": "4px",
+      "container_padding": "p-6 md:p-8 lg:p-12",
+      "section_gap": "gap-8 md:gap-12",
+      "internal_card_padding": "p-6"
+    },
+    "grid_strategies": {
+      "dashboard": "Bento Grid (Mode A): Mix of col-span-full, col-span-4, col-span-2.",
+      "match_list": "High Density Grid (Mode B): Compact rows, clear columns for H2H, Form, Odds.",
+      "mobile": "Single column (grid-cols-1). Stacked cards."
+    },
+    "containers": {
+      "max_width": "max-w-7xl mx-auto",
+      "alignment": "Center aligned container, but left aligned text content."
+    }
+  },
+  "components": {
+    "cards": {
+      "style": "Flat background (bg-zinc-900), 1px border (border-zinc-800), no shadow by default. Hover: border-zinc-700.",
+      "radius": "rounded-xl"
+    },
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 font-bold uppercase tracking-wide rounded-md",
+      "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-md",
+      "outline": "border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md",
+      "ghost": "hover:bg-accent hover:text-accent-foreground rounded-md"
+    },
+    "inputs": {
+      "style": "bg-zinc-950 border-zinc-800 focus:ring-2 focus:ring-primary rounded-md"
+    },
+    "navigation": {
+      "style": "Glassmorphism (backdrop-blur-xl bg-black/60 border-b border-white/10). Sticky top."
+    },
+    "charts": {
+      "library": "Recharts (via Shadcn Charts)",
+      "style": "Minimalist, hide grid lines if possible, use theme colors."
+    }
+  },
+  "visual_enhancers": {
+    "textures": "Add a subtle noise texture overlay to the body background (opacity 0.03).",
+    "borders": "Use 'Tracing Beam' effect for the 'Best Bet' card.",
+    "glassmorphism": "Use for overlays, modals, and sticky headers.",
+    "icons": "Lucide React. Use stroke-width={1.5} for a sleek look."
+  },
+  "media": {
+    "image_urls": {
+      "hero_background": "https://images.unsplash.com/photo-1761396677022-3678bcb336f0?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "football_action": "https://images.unsplash.com/photo-1602339824201-171804fff052?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "basketball_action": "https://images.unsplash.com/photo-1640528979293-e44c218b044d?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "stadium_crowd": "https://images.unsplash.com/photo-1766756467595-fd3f1f62d562?crop=entropy&cs=srgb&fm=jpg&q=85"
+    },
+    "rules": "Images must have a dark overlay (bg-black/50) when text is placed over them."
+  },
+  "motion": {
+    "transitions": "transition-all duration-300 ease-out",
+    "hover_effects": "Scale up slightly (scale-[1.02]) on cards. Brighten borders.",
+    "loading": "Skeleton loaders with shimmering effect (bg-zinc-800)."
+  },
+  "accessibility": {
+    "contrast": "Ensure text meets APCA standards.",
+    "focus_states": "Visible ring-2 ring-primary ring-offset-2 ring-offset-background.",
+    "reduced_motion": "Respect prefers-reduced-motion media query."
+  },
+  "instructions_to_main_agent": [
+    "Implement the 'Barlow Condensed' font for all headings immediately.",
+    "Set the global background color to #09090b in index.css.",
+    "Create a 'Layout' component that includes the navigation and footer.",
+    "Use the 'Bento Grid' pattern for the dashboard home page.",
+    "Ensure all betting odds are displayed in the 'JetBrains Mono' font.",
+    "Use 'sonner' for all toast notifications.",
+    "Do NOT use generic gradients. Use solid colors or subtle radial glows.",
+    "Mock data should be realistic (e.g., Premier League teams, Euroleague teams)."
+  ],
+  "universal_guidelines": [
+    "Avoid 'AI slop' aesthetic (generic centered layouts, uniform styling).",
+    "Create depth through z-index and layered elements.",
+    "Micro-animations are mandatory for all interactions.",
+    "Use 2-3x more spacing than typical designs.",
+    "Never use transparent backgrounds without blur/scrim for text readability."
+  ]
+}
