@@ -13,7 +13,9 @@ import {
   X,
   Trophy,
   ChevronRight,
-  Target
+  Target,
+  DollarSign,
+  Percent
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +37,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useParlay } from "@/context/ParlayContext";
+import OddsButton from "@/components/OddsButton";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -50,28 +54,20 @@ const BET_TYPES = [
 ];
 
 export default function ParlayBuilder() {
+  const { parlayItems, addToParlay, removeFromParlay, clearParlay, calculateTotals } = useParlay();
   const [matches, setMatches] = useState([]);
-  const [parlayItems, setParlayItems] = useState([]);
   const [loadingMatches, setLoadingMatches] = useState(true);
-  const [calculating, setCalculating] = useState(false);
-  const [parlayResult, setParlayResult] = useState(null);
   const [stakeAmount, setStakeAmount] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [selectedBet, setSelectedBet] = useState("");
   const [customOdds, setCustomOdds] = useState("");
 
+  const totals = calculateTotals(stakeAmount);
+
   useEffect(() => {
     fetchMatches();
   }, []);
-
-  useEffect(() => {
-    if (parlayItems.length > 0) {
-      calculateParlay();
-    } else {
-      setParlayResult(null);
-    }
-  }, [parlayItems, stakeAmount]);
 
   const fetchMatches = async () => {
     try {
@@ -85,26 +81,7 @@ export default function ParlayBuilder() {
     }
   };
 
-  const calculateParlay = async () => {
-    if (parlayItems.length === 0) return;
-    
-    setCalculating(true);
-    try {
-      const response = await axios.post(`${API}/parlay/calculate`, {
-        items: parlayItems
-      });
-      setParlayResult({
-        ...response.data,
-        potential_return: response.data.combined_odds * stakeAmount
-      });
-    } catch (error) {
-      console.error("Error calculating parlay:", error);
-    } finally {
-      setCalculating(false);
-    }
-  };
-
-  const addToParlay = () => {
+  const handleAddToParlay = () => {
     if (!selectedMatch || !selectedBet) {
       toast.error("Please select a match and bet type");
       return;
@@ -113,22 +90,18 @@ export default function ParlayBuilder() {
     const betType = BET_TYPES.find(b => b.value === selectedBet);
     const odds = customOdds ? parseFloat(customOdds) : betType.defaultOdds;
 
-    const newItem = {
+    addToParlay({
       match_id: selectedMatch.id,
       home_team: selectedMatch.home_team,
       away_team: selectedMatch.away_team,
       selection_name: betType.label,
       price: odds,
-      match_name: `${selectedMatch.home_team} vs ${selectedMatch.away_team}`
-    };
+      market: selectedBet.includes("over") || selectedBet.includes("under") ? "Over/Under" :
+              selectedBet.includes("btts") ? "BTTS" : "1X2",
+      league: selectedMatch.league,
+      sport: selectedMatch.sport
+    });
 
-    // Check if match already in parlay
-    if (parlayItems.some(item => item.match_id === selectedMatch.id)) {
-      toast.error("This match is already in your parlay");
-      return;
-    }
-
-    setParlayItems([...parlayItems, newItem]);
     setDialogOpen(false);
     setSelectedMatch(null);
     setSelectedBet("");
@@ -136,15 +109,13 @@ export default function ParlayBuilder() {
     toast.success("Added to parlay!");
   };
 
-  const removeFromParlay = (index) => {
-    const newItems = parlayItems.filter((_, i) => i !== index);
-    setParlayItems(newItems);
+  const handleRemove = (matchId) => {
+    removeFromParlay(matchId);
     toast.info("Removed from parlay");
   };
 
-  const clearParlay = () => {
-    setParlayItems([]);
-    setParlayResult(null);
+  const handleClear = () => {
+    clearParlay();
     toast.info("Parlay cleared");
   };
 
@@ -163,13 +134,19 @@ export default function ParlayBuilder() {
     }
   };
 
+  const getRiskLevel = () => {
+    if (parlayItems.length <= 2 && totals.probability > 20) return "LOW";
+    if (parlayItems.length <= 4 && totals.probability > 10) return "MEDIUM";
+    return "HIGH";
+  };
+
   const getRiskColor = (risk) => {
-    switch (risk?.toLowerCase()) {
-      case "low":
+    switch (risk) {
+      case "LOW":
         return "text-green-500 bg-green-500/20";
-      case "medium":
+      case "MEDIUM":
         return "text-yellow-500 bg-yellow-500/20";
-      case "high":
+      case "HIGH":
         return "text-red-500 bg-red-500/20";
       default:
         return "text-zinc-500 bg-zinc-500/20";
@@ -270,7 +247,7 @@ export default function ParlayBuilder() {
                 </div>
 
                 <Button 
-                  onClick={addToParlay}
+                  onClick={handleAddToParlay}
                   className="w-full bg-green-500 hover:bg-green-600 text-black font-bold"
                   disabled={!selectedMatch || !selectedBet}
                   data-testid="confirm-add-btn"
@@ -287,25 +264,28 @@ export default function ParlayBuilder() {
             <div className="space-y-4">
               {parlayItems.map((item, index) => (
                 <Card 
-                  key={index} 
+                  key={item.match_id || index} 
                   className="bg-zinc-900 border-zinc-800 animate-fade-in"
                   data-testid={`parlay-item-${index}`}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <p className="text-white font-medium mb-1">{item.match_name || `${item.home_team} vs ${item.away_team}`}</p>
+                        <p className="text-xs text-zinc-500 uppercase tracking-wide mb-1">
+                          {item.league || item.market}
+                        </p>
+                        <p className="text-white font-medium mb-2">{item.match_name}</p>
                         <div className="flex items-center gap-2">
                           <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                            {item.selection_name || item.selection}
+                            {item.selection_name}
                           </Badge>
-                          <span className="font-mono text-lg text-white">@ {(item.price || item.odds)?.toFixed(2)}</span>
+                          <span className="font-mono text-lg text-white">@ {item.price?.toFixed(2)}</span>
                         </div>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => removeFromParlay(index)}
+                        onClick={() => handleRemove(item.match_id)}
                         className="text-zinc-500 hover:text-red-500 hover:bg-red-500/10"
                         data-testid={`remove-item-${index}`}
                       >
@@ -319,7 +299,7 @@ export default function ParlayBuilder() {
               {/* Clear All */}
               <Button
                 variant="outline"
-                onClick={clearParlay}
+                onClick={handleClear}
                 className="w-full border-zinc-700 text-zinc-400 hover:text-white hover:border-red-500/50"
                 data-testid="clear-parlay-btn"
               >
@@ -333,8 +313,13 @@ export default function ParlayBuilder() {
                 <Layers className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-white mb-2">No Selections Yet</h3>
                 <p className="text-zinc-500 mb-4">
-                  Click "Add Selection" to start building your parlay
+                  Click "Add Selection" or click on odds in match cards to start building your parlay
                 </p>
+                <Link to="/">
+                  <Button variant="outline" className="border-zinc-700 text-white">
+                    Browse Matches
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           )}
@@ -353,14 +338,17 @@ export default function ParlayBuilder() {
               {/* Stake Amount */}
               <div>
                 <label className="text-sm text-zinc-500 mb-2 block">Stake Amount ($)</label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={stakeAmount}
-                  onChange={(e) => setStakeAmount(parseFloat(e.target.value) || 10)}
-                  className="bg-zinc-800 border-zinc-700 text-white font-mono text-lg"
-                  data-testid="stake-input"
-                />
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <Input
+                    type="number"
+                    min="1"
+                    value={stakeAmount}
+                    onChange={(e) => setStakeAmount(parseFloat(e.target.value) || 10)}
+                    className="bg-zinc-800 border-zinc-700 text-white font-mono text-lg pl-9"
+                    data-testid="stake-input"
+                  />
+                </div>
               </div>
 
               {/* Stats */}
@@ -370,19 +358,25 @@ export default function ParlayBuilder() {
                   <span className="font-mono font-bold text-white">{parlayItems.length}</span>
                 </div>
 
-                {parlayResult ? (
+                {parlayItems.length > 0 && (
                   <>
                     <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
-                      <span className="text-zinc-400">Combined Odds</span>
+                      <span className="text-zinc-400 flex items-center gap-1">
+                        <Calculator className="w-3 h-3" />
+                        Combined Odds
+                      </span>
                       <span className="font-mono font-bold text-white">
-                        {parlayResult.combined_odds.toFixed(2)}
+                        {totals.totalOdds.toFixed(2)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
-                      <span className="text-zinc-400">Win Probability</span>
+                      <span className="text-zinc-400 flex items-center gap-1">
+                        <Percent className="w-3 h-3" />
+                        Win Probability
+                      </span>
                       <span className="font-mono font-bold text-blue-400">
-                        {parlayResult.probability.toFixed(1)}%
+                        {totals.probability.toFixed(1)}%
                       </span>
                     </div>
 
@@ -390,11 +384,11 @@ export default function ParlayBuilder() {
                     <div className="flex justify-center py-4">
                       <div 
                         className="probability-circle"
-                        style={{ '--probability': `${parlayResult.probability * 3.6}deg` }}
+                        style={{ '--probability': `${totals.probability * 3.6}deg` }}
                       >
                         <div className="probability-inner">
                           <span className="font-mono text-2xl font-bold text-white">
-                            {parlayResult.probability.toFixed(1)}%
+                            {totals.probability.toFixed(1)}%
                           </span>
                           <span className="text-xs text-zinc-500">Win Chance</span>
                         </div>
@@ -405,21 +399,25 @@ export default function ParlayBuilder() {
                       <div className="flex justify-between items-center">
                         <span className="text-zinc-400">Potential Return</span>
                         <span className="font-mono text-2xl font-bold text-green-500">
-                          ${parlayResult.potential_return.toFixed(2)}
+                          ${totals.potentialReturn.toFixed(2)}
                         </span>
                       </div>
                     </div>
 
                     {/* Risk Assessment */}
                     <div className="flex items-center justify-between p-3 rounded-lg">
-                      <span className="text-zinc-400">Risk Level</span>
-                      <Badge className={getRiskColor(parlayResult.risk_assessment)}>
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        {parlayResult.risk_assessment}
+                      <span className="text-zinc-400 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Risk Level
+                      </span>
+                      <Badge className={getRiskColor(getRiskLevel())}>
+                        {getRiskLevel()}
                       </Badge>
                     </div>
                   </>
-                ) : (
+                )}
+
+                {parlayItems.length === 0 && (
                   <div className="text-center py-8 text-zinc-600">
                     <Target className="w-8 h-8 mx-auto mb-2" />
                     <p className="text-sm">Add selections to see calculations</p>
@@ -427,14 +425,14 @@ export default function ParlayBuilder() {
                 )}
               </div>
 
-              {/* Save Button */}
+              {/* Place Bet Button */}
               {parlayItems.length > 0 && (
                 <Button
                   onClick={saveParlay}
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold"
-                  data-testid="save-parlay-btn"
+                  className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold uppercase border border-red-500/50 shadow-lg shadow-red-500/20"
+                  data-testid="place-bet-btn"
                 >
-                  Save Parlay
+                  Place Bet
                 </Button>
               )}
             </CardContent>
