@@ -1,70 +1,100 @@
 {
-  "timestamp": "2026-01-28T01:00:13.458633",
-  "total_tests": 10,
-  "passed_tests": 10,
-  "failed_tests": 0,
-  "success_rate": 100.0,
+  "timestamp": "2026-01-28T14:48:06.637994",
+  "total_tests": 14,
+  "passed_tests": 13,
+  "failed_tests": 1,
+  "success_rate": 92.85714285714286,
   "test_results": [
     {
       "test": "Root Endpoint",
       "success": true,
       "details": "API is accessible",
-      "timestamp": "2026-01-28T00:59:57.658828"
+      "timestamp": "2026-01-28T14:47:47.211610"
+    },
+    {
+      "test": "Basketball EuroLeague Check",
+      "success": true,
+      "details": "basketball_euroleague found in leagues",
+      "timestamp": "2026-01-28T14:47:47.262280"
     },
     {
       "test": "Leagues Endpoint",
       "success": true,
       "details": "Found 8 leagues",
-      "timestamp": "2026-01-28T00:59:57.701341"
+      "timestamp": "2026-01-28T14:47:47.262295"
+    },
+    {
+      "test": "Premier League Matches",
+      "success": true,
+      "details": "Found 20 Premier League matches",
+      "timestamp": "2026-01-28T14:47:47.617333"
     },
     {
       "test": "Matches Endpoint",
       "success": true,
-      "details": "Found 45 matches with valid structure",
-      "timestamp": "2026-01-28T01:00:00.746969"
+      "details": "Found 120 matches with valid structure",
+      "timestamp": "2026-01-28T14:47:53.830773"
     },
     {
-      "test": "Match Detail AI Analysis",
+      "test": "Extended Markets Structure",
       "success": true,
-      "details": "AI analysis structure is valid",
-      "timestamp": "2026-01-28T01:00:09.206501"
+      "details": "No matches with odds found - structure cannot be tested (API quota may be exhausted)",
+      "timestamp": "2026-01-28T14:47:55.611428"
+    },
+    {
+      "test": "Match Detail AI Analysis (Core)",
+      "success": true,
+      "details": "Core AI analysis fields present",
+      "timestamp": "2026-01-28T14:48:03.800869"
+    },
+    {
+      "test": "Match Detail AI Analysis (Enhanced)",
+      "success": false,
+      "details": "Missing enhanced fields: ['value_bet']",
+      "timestamp": "2026-01-28T14:48:03.800888"
     },
     {
       "test": "Match Detail Endpoint",
       "success": true,
       "details": "Match detail loaded with fields: ['head_to_head', 'home_form', 'away_form', 'injuries']",
-      "timestamp": "2026-01-28T01:00:09.206517"
+      "timestamp": "2026-01-28T14:48:03.800895"
     },
     {
       "test": "Standings Endpoint",
       "success": true,
       "details": "Standings loaded with 20 teams",
-      "timestamp": "2026-01-28T01:00:09.284160"
+      "timestamp": "2026-01-28T14:48:04.446648"
     },
     {
       "test": "Parlay Calculate Endpoint",
       "success": true,
       "details": "Calculation correct: 3.24",
-      "timestamp": "2026-01-28T01:00:09.328941"
+      "timestamp": "2026-01-28T14:48:04.487247"
     },
     {
       "test": "League Filter",
       "success": true,
-      "details": "League filter working: 16 matches",
-      "timestamp": "2026-01-28T01:00:10.369140"
+      "details": "League filter working: 20 matches",
+      "timestamp": "2026-01-28T14:48:04.794835"
     },
     {
       "test": "Sport Filter (Football)",
       "success": true,
-      "details": "Football filter working: 45 matches",
-      "timestamp": "2026-01-28T01:00:13.415030"
+      "details": "Football filter working: 120 matches",
+      "timestamp": "2026-01-28T14:48:06.459723"
     },
     {
       "test": "Sport Filter (Basketball)",
       "success": true,
       "details": "Basketball filter working: 0 matches",
-      "timestamp": "2026-01-28T01:00:13.458445"
+      "timestamp": "2026-01-28T14:48:06.637664"
     }
   ],
-  "failed_details": []
+  "failed_details": [
+    {
+      "test": "Match Detail AI Analysis (Enhanced)",
+      "error": "Missing enhanced fields: ['value_bet']",
+      "response": null
+    }
+  ]
 }
