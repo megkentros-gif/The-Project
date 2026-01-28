@@ -53,6 +53,11 @@ export default function Layout({ children }) {
                   >
                     <Icon className="w-4 h-4" strokeWidth={1.5} />
                     <span className="font-medium">{link.label}</span>
+                    {link.badge > 0 && (
+                      <Badge className="bg-green-500 text-black text-xs px-1.5 py-0.5 min-w-[20px] text-center">
+                        {link.badge}
+                      </Badge>
+                    )}
                   </Link>
                 );
               })}
