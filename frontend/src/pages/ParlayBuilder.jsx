@@ -313,7 +313,7 @@ export default function ParlayBuilder() {
                 <Layers className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-white mb-2">No Selections Yet</h3>
                 <p className="text-zinc-500 mb-4">
-                  Click "Add Selection" or click on odds in match cards to start building your parlay
+                  Click &quot;Add Selection&quot; or click on odds in match cards to start building your parlay
                 </p>
                 <Link to="/">
                   <Button variant="outline" className="border-zinc-700 text-white">
