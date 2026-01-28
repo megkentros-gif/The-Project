@@ -469,11 +469,13 @@ def parse_basketball_game(game: Dict[str, Any], league_info: Dict[str, str]) -> 
 async def fetch_basketball_from_odds_api(sport_key: str) -> List[Dict[str, Any]]:
     """Fetch basketball games directly from The Odds API with real odds"""
     if not ODDS_API_KEY:
+        logger.warning("ODDS_API_KEY not configured")
         return []
     
     cache_key = f"basketball_odds:{sport_key}"
     cached = get_cache(cache_key)
     if cached:
+        logger.info(f"Returning {len(cached)} cached basketball games")
         return cached
     
     async with httpx.AsyncClient() as http_client:
@@ -490,6 +492,7 @@ async def fetch_basketball_from_odds_api(sport_key: str) -> List[Dict[str, Any]]
             
             if response.status_code == 200:
                 data = response.json()
+                logger.info(f"Basketball API returned {len(data)} matches")
                 games = []
                 
                 for match in data:
@@ -548,9 +551,17 @@ async def fetch_basketball_from_odds_api(sport_key: str) -> List[Dict[str, Any]]
                 
                 set_cache(cache_key, games)
                 return games
-            return []
+            elif response.status_code == 401:
+                logger.error("Basketball Odds API: Invalid API key")
+                return []
+            elif response.status_code == 429:
+                logger.warning("Basketball Odds API: Rate limit exceeded or quota reached")
+                return []
+            else:
+                logger.error(f"Basketball Odds API error: {response.status_code} - {response.text[:200]}")
+                return []
         except Exception as e:
-            logger.error(f"Basketball Odds API error: {e}")
+            logger.error(f"Basketball Odds API exception: {e}")
             return []
 
 # API Endpoints
