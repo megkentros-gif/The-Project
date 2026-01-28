@@ -249,7 +249,8 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Enhanced AI Analysis with Web Search"
+    - "Quick Probability Calculation for Matches"
+    - "Top 4 High-Probability Picks Section"
   stuck_tasks:
     - "Enhanced AI Analysis with Web Search"
   test_all: false
@@ -258,18 +259,26 @@ test_plan:
 agent_communication:
   - agent: "main"
     message: |
-      Implemented all 4 major enhancement tasks:
-      1. Navigation persistence using localStorage
-      2. All 20 EuroLeague team logos mapped
-      3. AI analysis with web search for injury/news from specific sources
-      4. Value Bet calculation comparing AI vs bookmaker odds
+      Implemented Top 4 High-Probability Picks feature:
       
-      NOTE: Odds API quota appears exhausted (401 error), so odds may not display. The code handles this gracefully.
+      BACKEND CHANGES:
+      1. Added calculate_quick_probability() function in server.py
+      2. Returns probability, best_pick, pick_type based on odds
+      3. Fallback logic generates consistent probability based on team names when odds unavailable
+      
+      FRONTEND CHANGES:
+      1. Dashboard.jsx - Added topPicks useMemo that sorts matches by quick_analysis.probability
+      2. New FeaturedPickCard.jsx component with red theme:
+         - Dark red gradient background (from-red-900 to-red-600)
+         - HOT badge with pulse animation
+         - Thick red border (border-2 border-red-500)
+         - AI probability in bright red circle
+         - Dynamic filtering when league changes
       
       Please test:
-      - Filter persistence: Select EuroLeague, go to match detail, click back - should still show EuroLeague
-      - EuroLeague logos should display properly
-      - Match detail AI analysis should show news summary and value bet when odds available
+      - /api/matches endpoint returns quick_analysis field with probability
+      - Top 4 picks are sorted by highest probability
+      - Featured picks section displays correctly with red theme
   - agent: "testing"
     message: |
       BACKEND TESTING COMPLETED - 14/14 tests passed
