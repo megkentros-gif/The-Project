@@ -328,8 +328,8 @@ Provide your expert betting analysis."""
             "risk_level": "unknown"
         }
 
-def parse_football_data_match(match: Dict[str, Any], league_code: str) -> Dict[str, Any]:
-    """Parse a match from Football-Data.org format"""
+def parse_football_data_match(match: Dict[str, Any], league_code: str, odds_map: Dict = None) -> Dict[str, Any]:
+    """Parse a match from Football-Data.org format with real odds"""
     league_info = FOOTBALL_LEAGUES.get(league_code, {"name": "Unknown", "code": league_code})
     
     status_map = {
@@ -342,22 +342,51 @@ def parse_football_data_match(match: Dict[str, Any], league_code: str) -> Dict[s
         "CANCELLED": "CANC"
     }
     
+    home_team = match.get("homeTeam", {}).get("name", "Unknown")
+    away_team = match.get("awayTeam", {}).get("name", "Unknown")
+    
+    # Try to find real odds
+    match_odds = None
+    has_odds = False
+    
+    if odds_map:
+        # Try different key formats to match
+        home_lower = home_team.lower().replace(" fc", "").replace(" f.c.", "").strip()
+        away_lower = away_team.lower().replace(" fc", "").replace(" f.c.", "").strip()
+        
+        # Try exact match first
+        key = f"{home_lower}_{away_lower}"
+        if key in odds_map:
+            match_odds = odds_map[key]
+            has_odds = True
+        else:
+            # Try partial matching
+            for odds_key, odds_data in odds_map.items():
+                odds_home, odds_away = odds_key.split("_", 1)
+                # Check if team names partially match
+                if (odds_home in home_lower or home_lower in odds_home) and \
+                   (odds_away in away_lower or away_lower in odds_away):
+                    match_odds = odds_data
+                    has_odds = True
+                    break
+    
     return {
         "id": f"fd_{match.get('id', '')}",
         "sport": "football",
         "league": league_info.get("name", "Unknown"),
         "league_id": league_code,
         "league_code": league_code,
-        "home_team": match.get("homeTeam", {}).get("name", "Unknown"),
-        "away_team": match.get("awayTeam", {}).get("name", "Unknown"),
+        "home_team": home_team,
+        "away_team": away_team,
         "home_logo": match.get("homeTeam", {}).get("crest", ""),
         "away_logo": match.get("awayTeam", {}).get("crest", ""),
         "match_date": match.get("utcDate", ""),
         "status": status_map.get(match.get("status", ""), match.get("status", "NS")),
         "home_score": match.get("score", {}).get("fullTime", {}).get("home"),
         "away_score": match.get("score", {}).get("fullTime", {}).get("away"),
-        "has_odds": True,  # We'll generate realistic odds
-        "odds": generate_realistic_odds(match),
+        "has_odds": has_odds,
+        "odds": match_odds,
+        "bookmakers": match_odds.get("bookmakers", [])[:5] if match_odds else []
     }
 
 def generate_realistic_odds(match: Dict[str, Any]) -> Dict[str, Any]:
