@@ -363,7 +363,7 @@ def main():
             "success_rate": (tester.tests_passed / tester.tests_run * 100) if tester.tests_run > 0 else 0,
             "test_results": tester.test_results,
             "failed_details": tester.failed_tests
-        }, indent=2)
+        }, f, indent=2)
     
     return 0 if success else 1
 
