@@ -52,6 +52,8 @@ export default function MatchDetail() {
   };
 
   const handleBackClick = () => {
+    // Navigate back to dashboard - localStorage already has the filter state preserved
+    // The Dashboard will read from localStorage and restore the last selected filters
     navigate("/");
   };
 
