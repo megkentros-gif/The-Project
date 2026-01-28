@@ -60,9 +60,9 @@ FOOTBALL_LEAGUES = {
     "EC": {"name": "Europa League", "country": "Europe", "code": "EC", "odds_key": "soccer_uefa_europa_league"},
 }
 
-# EuroLeague Basketball
+# EuroLeague Basketball - use The Odds API
 BASKETBALL_LEAGUES = {
-    "120": {"name": "EuroLeague", "country": "Europe", "code": "EURO"},
+    "basketball_euroleague": {"name": "EuroLeague", "country": "Europe", "code": "EURO", "odds_key": "basketball_euroleague"},
 }
 
 # Models
