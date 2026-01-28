@@ -355,27 +355,45 @@ export default function MatchDetail() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-zinc-400">Home</span>
-                    <div className="text-right">
-                      <span className="font-mono text-white">{matchWinner.home}</span>
-                      <span className="text-green-500 ml-2">({matchWinner.homeProb}%)</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-zinc-400">Draw</span>
-                    <div className="text-right">
-                      <span className="font-mono text-white">{matchWinner.draw}</span>
-                      <span className="text-yellow-500 ml-2">({matchWinner.drawProb}%)</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-zinc-400">Away</span>
-                    <div className="text-right">
-                      <span className="font-mono text-white">{matchWinner.away}</span>
-                      <span className="text-blue-500 ml-2">({matchWinner.awayProb}%)</span>
-                    </div>
-                  </div>
+                  {matchWinner.home && (
+                    <OddsButton
+                      matchId={match.id}
+                      homeTeam={match.home_team}
+                      awayTeam={match.away_team}
+                      selection="Home Win"
+                      odds={matchWinner.home}
+                      market="1X2"
+                      league={match.league}
+                      sport={match.sport}
+                      className="w-full justify-between"
+                    />
+                  )}
+                  {matchWinner.draw && (
+                    <OddsButton
+                      matchId={match.id}
+                      homeTeam={match.home_team}
+                      awayTeam={match.away_team}
+                      selection="Draw"
+                      odds={matchWinner.draw}
+                      market="1X2"
+                      league={match.league}
+                      sport={match.sport}
+                      className="w-full justify-between"
+                    />
+                  )}
+                  {matchWinner.away && (
+                    <OddsButton
+                      matchId={match.id}
+                      homeTeam={match.home_team}
+                      awayTeam={match.away_team}
+                      selection="Away Win"
+                      odds={matchWinner.away}
+                      market="1X2"
+                      league={match.league}
+                      sport={match.sport}
+                      className="w-full justify-between"
+                    />
+                  )}
                 </div>
               </CardContent>
             </Card>
