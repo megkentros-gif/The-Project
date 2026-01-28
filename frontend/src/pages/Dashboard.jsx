@@ -90,7 +90,7 @@ export default function Dashboard() {
   };
 
   const getUpcomingCount = () => {
-    return matches.filter(m => m.status === "SCHEDULED" || m.status === "TIMED").length;
+    return matches.filter(m => m.status === "NS" || m.status === "SCHEDULED" || m.status === "TIMED").length;
   };
 
   return (
