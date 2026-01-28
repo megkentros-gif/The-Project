@@ -270,8 +270,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Parlay Builder Full Functionality"
-    - "Quick Probability Calculation"
+    - "Enhanced AI Analysis with Web Search"
   stuck_tasks:
     - "Enhanced AI Analysis with Web Search"
   test_all: false
