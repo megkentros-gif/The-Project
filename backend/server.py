@@ -577,8 +577,16 @@ async def get_matches(
     """Get upcoming matches with REAL odds from bookmakers"""
     all_matches = []
     
-    # Fetch football matches
-    if sport is None or sport == "football":
+    # Check if basketball league is explicitly requested
+    is_basketball_request = (
+        league in BASKETBALL_LEAGUES or 
+        league == "EURO" or 
+        league == "basketball_euroleague" or
+        sport == "basketball"
+    )
+    
+    # Fetch football matches ONLY if not explicitly requesting basketball
+    if not is_basketball_request and (sport is None or sport == "football"):
         leagues_to_fetch = [league] if league and league in FOOTBALL_LEAGUES else list(FOOTBALL_LEAGUES.keys())
         
         for league_code in leagues_to_fetch:
@@ -610,16 +618,17 @@ async def get_matches(
             
             await asyncio.sleep(0.1)  # Small delay to respect rate limits
     
-    # Fetch basketball matches from The Odds API
-    if sport is None or sport == "basketball":
-        if league is None or league in BASKETBALL_LEAGUES or league == "EURO" or league == "basketball_euroleague":
-            for league_id, league_info in BASKETBALL_LEAGUES.items():
-                odds_key = league_info.get("odds_key", "")
-                if odds_key:
-                    # Fetch basketball games directly from The Odds API
-                    basketball_odds = await fetch_basketball_from_odds_api(odds_key)
-                    for game in basketball_odds:
-                        all_matches.append(game)
+    # Fetch basketball matches ONLY from The Odds API when basketball is requested
+    if is_basketball_request or (sport is None and league is None):
+        for league_id, league_info in BASKETBALL_LEAGUES.items():
+            odds_key = league_info.get("odds_key", "")
+            if odds_key:
+                # Fetch basketball games directly from The Odds API
+                logger.info(f"Fetching basketball from The Odds API: {odds_key}")
+                basketball_odds = await fetch_basketball_from_odds_api(odds_key)
+                logger.info(f"Fetched {len(basketball_odds)} basketball games")
+                for game in basketball_odds:
+                    all_matches.append(game)
     
     # Sort by date
     all_matches.sort(key=lambda x: x.get("match_date", ""))
