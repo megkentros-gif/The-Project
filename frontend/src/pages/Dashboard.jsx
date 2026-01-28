@@ -231,7 +231,7 @@ export default function Dashboard() {
         
         <div className="flex-1" />
         
-        <Select value={selectedSport} onValueChange={setSelectedSport}>
+        <Select value={selectedSport} onValueChange={handleSportChange}>
           <SelectTrigger className="w-40 bg-zinc-900 border-zinc-800 text-white" data-testid="sport-filter">
             <SelectValue placeholder="Sport" />
           </SelectTrigger>
@@ -242,7 +242,7 @@ export default function Dashboard() {
           </SelectContent>
         </Select>
         
-        <Select value={selectedLeague} onValueChange={setSelectedLeague}>
+        <Select value={selectedLeague} onValueChange={handleLeagueChange}>
           <SelectTrigger className="w-48 bg-zinc-900 border-zinc-800 text-white" data-testid="league-filter">
             <SelectValue placeholder="League" />
           </SelectTrigger>
