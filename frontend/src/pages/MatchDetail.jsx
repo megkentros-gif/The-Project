@@ -441,6 +441,74 @@ export default function MatchDetail() {
         </div>
       )}
 
+      {/* Extended Markets Section - Handicap & Alternative Lines */}
+      {match.has_odds && (handicapOdds || alternativeLines) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {/* Handicap Market */}
+          {handicapOdds && Object.keys(handicapOdds).length > 0 && (
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-zinc-400 flex items-center gap-2">
+                  <Scale className="w-4 h-4" />
+                  Handicap / Spread
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {Object.entries(handicapOdds).map(([key, data]) => (
+                    <div key={key} className="flex justify-between items-center p-2 bg-zinc-800/50 rounded-lg">
+                      <span className="text-white font-medium text-sm">{key}</span>
+                      <div className="text-right">
+                        <span className="font-mono text-white">{data.odds}</span>
+                        <span className="text-purple-400 ml-2 text-sm">({data.prob}%)</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Alternative Over/Under Lines */}
+          {alternativeLines && Object.keys(alternativeLines).length > 0 && (
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-zinc-400 flex items-center gap-2">
+                  <TrendingDown className="w-4 h-4" />
+                  Alternative Totals
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {Object.entries(alternativeLines)
+                    .sort(([a], [b]) => parseFloat(a) - parseFloat(b))
+                    .slice(0, 4) // Show top 4 lines
+                    .map(([line, data]) => (
+                    <div key={line} className="flex justify-between items-center p-2 bg-zinc-800/50 rounded-lg">
+                      <span className="text-zinc-400 text-sm">Line {line}</span>
+                      <div className="flex gap-4">
+                        {data.Over && (
+                          <div className="text-right">
+                            <span className="text-xs text-zinc-500">O</span>
+                            <span className="font-mono text-green-400 ml-1">{data.Over}</span>
+                          </div>
+                        )}
+                        {data.Under && (
+                          <div className="text-right">
+                            <span className="text-xs text-zinc-500">U</span>
+                            <span className="font-mono text-red-400 ml-1">{data.Under}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2">
