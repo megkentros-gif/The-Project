@@ -953,6 +953,9 @@ class BettingAPITester:
         # NEW: Test Top 4 High-Probability Picks functionality
         self.test_top_picks_functionality()
         
+        # NEW: Test Parlay Builder Backend functionality
+        self.test_parlay_builder_functionality()
+        
         # Test match details with enhanced AI analysis
         if matches:
             self.test_match_detail_endpoint(matches)
@@ -961,7 +964,7 @@ class BettingAPITester:
         if leagues:
             self.test_standings_endpoint(leagues)
         
-        # Test parlay calculation
+        # Test parlay calculation (legacy test)
         self.test_parlay_calculate_endpoint()
         
         # Test filters
