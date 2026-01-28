@@ -203,7 +203,7 @@ export default function Dashboard() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 mb-8">
+      <div className="flex flex-wrap items-center gap-4 mb-8 relative z-20">
         <h2 className="font-heading text-2xl font-bold uppercase text-white">
           Upcoming Matches
         </h2>
@@ -214,7 +214,7 @@ export default function Dashboard() {
           <SelectTrigger className="w-40 bg-zinc-900 border-zinc-800 text-white" data-testid="sport-filter">
             <SelectValue placeholder="Sport" />
           </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-zinc-800">
+          <SelectContent className="bg-zinc-900 border-zinc-800 z-50">
             <SelectItem value="all">All Sports</SelectItem>
             <SelectItem value="football">Football</SelectItem>
             <SelectItem value="basketball">Basketball</SelectItem>
@@ -225,7 +225,7 @@ export default function Dashboard() {
           <SelectTrigger className="w-48 bg-zinc-900 border-zinc-800 text-white" data-testid="league-filter">
             <SelectValue placeholder="League" />
           </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-zinc-800">
+          <SelectContent className="bg-zinc-900 border-zinc-800 z-50">
             <SelectItem value="all">All Leagues</SelectItem>
             {leagues
               .filter(l => selectedSport === "all" || l.sport === selectedSport)
