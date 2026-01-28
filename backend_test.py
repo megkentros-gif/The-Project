@@ -145,46 +145,102 @@ class BettingAPITester:
         
         return matches
 
-    def test_extended_markets_structure(self):
-        """Test that odds response includes Handicap and Over/Under Alternative fields"""
-        # First get some matches
+    def test_match_detail_endpoint(self, matches: List[Dict]):
+        """Test match detail endpoint with enhanced AI analysis fields"""
+        if not matches:
+            self.log_test("Match Detail Endpoint", False, "No matches available to test")
+            return
+        
+        # Test with first match
+        match_id = matches[0]["id"]
+        success, response = self.make_request("GET", f"/matches/{match_id}")
+        
+        if not success:
+            self.log_test("Match Detail Endpoint", False, f"Request failed: {response}")
+            return
+        
+        # Check for AI analysis with enhanced fields
+        if "ai_analysis" in response:
+            ai_analysis = response["ai_analysis"]
+            
+            # Required AI analysis fields
+            required_ai_fields = ["prediction", "confidence", "best_bet", "reasoning", "risk_level"]
+            missing_ai_fields = [field for field in required_ai_fields if field not in ai_analysis]
+            
+            if missing_ai_fields:
+                self.log_test("Match Detail AI Analysis (Core)", False, f"Missing AI fields: {missing_ai_fields}")
+            else:
+                self.log_test("Match Detail AI Analysis (Core)", True, "Core AI analysis fields present")
+            
+            # Check for new enhanced fields
+            enhanced_fields = ["news_summary", "key_injuries", "value_bet"]
+            present_enhanced = []
+            missing_enhanced = []
+            
+            for field in enhanced_fields:
+                if field in ai_analysis:
+                    present_enhanced.append(field)
+                else:
+                    missing_enhanced.append(field)
+            
+            if missing_enhanced:
+                self.log_test("Match Detail AI Analysis (Enhanced)", False, f"Missing enhanced fields: {missing_enhanced}")
+            else:
+                self.log_test("Match Detail AI Analysis (Enhanced)", True, f"All enhanced fields present: {enhanced_fields}")
+            
+            # Test value_bet structure if present
+            if "value_bet" in ai_analysis:
+                value_bet = ai_analysis["value_bet"]
+                if value_bet is not None:
+                    value_bet_fields = ["has_value", "value_rating", "ai_probability", "implied_probability", "edge"]
+                    missing_vb_fields = [field for field in value_bet_fields if field not in value_bet]
+                    
+                    if missing_vb_fields:
+                        self.log_test("Value Bet Structure", False, f"Missing value bet fields: {missing_vb_fields}")
+                    else:
+                        self.log_test("Value Bet Structure", True, "Value bet structure is complete")
+                else:
+                    self.log_test("Value Bet Structure", True, "Value bet is null (valid when no odds available)")
+        else:
+            self.log_test("Match Detail AI Analysis", False, "Missing AI analysis")
+        
+        # Check for additional data
+        expected_fields = ["head_to_head", "home_form", "away_form", "injuries"]
+        present_fields = [field for field in expected_fields if field in response]
+        
+        self.log_test("Match Detail Endpoint", True, f"Match detail loaded with fields: {present_fields}")
+
+    def test_matches_endpoint(self):
+        """Test general matches endpoint"""
         success, response = self.make_request("GET", "/matches")
         
-        if not success or "matches" not in response:
-            self.log_test("Extended Markets Structure", False, "Could not fetch matches to test odds structure")
-            return
+        if not success:
+            self.log_test("Matches Endpoint", False, f"Request failed: {response}")
+            return None
+        
+        if "matches" not in response:
+            self.log_test("Matches Endpoint", False, "Missing 'matches' key in response")
+            return None
         
         matches = response["matches"]
-        matches_with_odds = [m for m in matches if m.get("has_odds") and m.get("odds")]
+        if not isinstance(matches, list):
+            self.log_test("Matches Endpoint", False, "'matches' is not a list")
+            return None
         
-        if not matches_with_odds:
-            self.log_test("Extended Markets Structure", True, "No matches with odds found - structure cannot be tested (API quota may be exhausted)")
-            return
-        
-        # Test odds structure on first match with odds
-        match = matches_with_odds[0]
-        odds = match.get("odds", {})
-        
-        # Check for required extended market fields
-        required_markets = ["Handicap", "Over/Under Alternative"]
-        missing_markets = []
-        
-        for market in required_markets:
-            if market not in odds:
-                missing_markets.append(market)
-        
-        if missing_markets:
-            self.log_test("Extended Markets Structure", False, f"Missing markets in odds: {missing_markets}. Available: {list(odds.keys())}")
-        else:
-            self.log_test("Extended Markets Structure", True, f"Extended markets found: {required_markets}")
-        
-        # Also check for standard markets
-        standard_markets = ["Match Winner", "Over/Under 2.5"]
-        for market in standard_markets:
-            if market in odds:
-                self.log_test(f"Standard Market ({market})", True, f"Market structure present")
+        # Validate match structure
+        if matches:
+            match = matches[0]
+            required_fields = ["id", "sport", "league", "home_team", "away_team", "match_date", "status"]
+            missing_fields = [field for field in required_fields if field not in match]
+            
+            if missing_fields:
+                self.log_test("Matches Endpoint", False, f"Missing fields in match: {missing_fields}")
             else:
-                self.log_test(f"Standard Market ({market})", False, f"Market missing from odds structure")
+                self.log_test("Matches Endpoint", True, f"Found {len(matches)} matches with valid structure")
+        else:
+            self.log_test("Matches Endpoint", True, "No matches found (empty list is valid)")
+        
+        return matches
 
     def test_standings_endpoint(self, leagues: List[Dict]):
         """Test standings endpoint"""
