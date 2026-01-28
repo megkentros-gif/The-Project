@@ -675,7 +675,7 @@ def calculate_quick_probability(odds: Dict[str, Any], home_team: str = "", away_
             "pick_type": pick_type,
             "pick_odds": round(pick_odds, 2),
             "implied_prob": round(best_prob, 1),
-            "source": "estimated"
+            "source": "ai_estimated"
         }
     
     return {"probability": 0, "best_pick": None, "pick_type": None, "source": None}
