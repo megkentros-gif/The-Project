@@ -136,15 +136,18 @@ backend:
 
   - task: "Enhanced AI Analysis with Web Search"
     implemented: true
-    working: true
+    working: false
     file: "backend/server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Implemented search_sports_news() function using Emergent LLM with web search enabled. Searches Eurohoops, Basketnews, Sport24, Gazzetta.gr, SDNA, Marca, AS for injury reports and team news"
+      - working: false
+        agent: "testing"
+        comment: "CRITICAL: News search failing with error 'LlmChat' object has no attribute 'with_tools'. The web search functionality is not working. AI analysis returns 'News search unavailable' in news_summary field. Core AI analysis (prediction, confidence, reasoning) works correctly."
 
   - task: "Value Bet Calculation"
     implemented: true
@@ -152,11 +155,14 @@ backend:
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Implemented calculate_value_bet() function that compares AI probability vs bookmaker odds to find value bets. Returns has_value, value_rating (HIGH VALUE/GOOD VALUE/SLIGHT VALUE/NO VALUE), edge percentage"
+      - working: true
+        agent: "testing"
+        comment: "Value bet calculation logic is correctly implemented. Field is missing from AI analysis when no odds available (API quota exhausted - 401 errors). Structure is correct when odds are present."
 
   - task: "Extended Betting Markets (Handicap, Alternative Lines)"
     implemented: true
@@ -164,11 +170,14 @@ backend:
     file: "backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Extended fetch_real_odds() to include spreads (handicap) market. Frontend updated with getHandicapOdds() and getAlternativeLines() helpers"
+      - working: true
+        agent: "testing"
+        comment: "Extended markets structure correctly implemented. Odds response includes 'Handicap' and 'Over/Under Alternative' fields as required. API quota exhausted (401 errors) prevents live odds data, but structure is correct."
 
 frontend:
   - task: "Value Bet UI Display"
