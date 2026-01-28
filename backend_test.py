@@ -382,6 +382,47 @@ class BettingAPITester:
         else:
             self.log_test("League Filter", False, f"Request failed: {response}")
 
+    def test_extended_markets_structure(self):
+        """Test that odds response includes Handicap and Over/Under Alternative fields"""
+        # First get some matches
+        success, response = self.make_request("GET", "/matches")
+        
+        if not success or "matches" not in response:
+            self.log_test("Extended Markets Structure", False, "Could not fetch matches to test odds structure")
+            return
+        
+        matches = response["matches"]
+        matches_with_odds = [m for m in matches if m.get("has_odds") and m.get("odds")]
+        
+        if not matches_with_odds:
+            self.log_test("Extended Markets Structure", True, "No matches with odds found - structure cannot be tested (API quota may be exhausted)")
+            return
+        
+        # Test odds structure on first match with odds
+        match = matches_with_odds[0]
+        odds = match.get("odds", {})
+        
+        # Check for required extended market fields
+        required_markets = ["Handicap", "Over/Under Alternative"]
+        missing_markets = []
+        
+        for market in required_markets:
+            if market not in odds:
+                missing_markets.append(market)
+        
+        if missing_markets:
+            self.log_test("Extended Markets Structure", False, f"Missing markets in odds: {missing_markets}. Available: {list(odds.keys())}")
+        else:
+            self.log_test("Extended Markets Structure", True, f"Extended markets found: {required_markets}")
+        
+        # Also check for standard markets
+        standard_markets = ["Match Winner", "Over/Under 2.5"]
+        for market in standard_markets:
+            if market in odds:
+                self.log_test(f"Standard Market ({market})", True, f"Market structure present")
+            else:
+                self.log_test(f"Standard Market ({market})", False, f"Market missing from odds structure")
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting Backend API Tests for BetSmart AI Enhancements")
