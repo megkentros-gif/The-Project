@@ -193,7 +193,7 @@ async def fetch_real_odds(sport_key: str, use_cache: bool = True) -> Dict[str, D
             params = {
                 "apiKey": ODDS_API_KEY,
                 "regions": "eu,uk",
-                "markets": "h2h,totals",
+                "markets": "h2h,totals,btts",
                 "oddsFormat": "decimal"
             }
             logger.info(f"Fetching odds: {url}")
@@ -209,7 +209,12 @@ async def fetch_real_odds(sport_key: str, use_cache: bool = True) -> Dict[str, D
                     key = f"{home}_{away}"
                     
                     # Get best odds from all bookmakers
-                    best_odds = {"Match Winner": {}, "Over/Under 2.5": {}, "bookmakers": []}
+                    best_odds = {
+                        "Match Winner": {}, 
+                        "Over/Under 2.5": {}, 
+                        "Both Teams Score": {},
+                        "bookmakers": []
+                    }
                     
                     for bookmaker in match.get("bookmakers", []):
                         book_name = bookmaker.get("title", "")
@@ -244,6 +249,16 @@ async def fetch_real_odds(sport_key: str, use_cache: bool = True) -> Dict[str, D
                                             best_odds["Over/Under 2.5"]["Over"] = str(round(price, 2))
                                         elif name == "Under":
                                             best_odds["Over/Under 2.5"]["Under"] = str(round(price, 2))
+                            
+                            elif market_key == "btts":
+                                for outcome in market.get("outcomes", []):
+                                    name = outcome.get("name", "")
+                                    price = outcome.get("price", 0)
+                                    
+                                    if name == "Yes":
+                                        best_odds["Both Teams Score"]["Yes"] = str(round(price, 2))
+                                    elif name == "No":
+                                        best_odds["Both Teams Score"]["No"] = str(round(price, 2))
                     
                     odds_map[key] = best_odds
                 
