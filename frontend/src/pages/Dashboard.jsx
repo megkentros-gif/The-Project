@@ -230,7 +230,7 @@ export default function Dashboard() {
             {leagues
               .filter(l => selectedSport === "all" || l.sport === selectedSport)
               .map((league) => (
-                <SelectItem key={league.code} value={league.code}>
+                <SelectItem key={league.id || league.code} value={league.id || league.code}>
                   {league.name}
                 </SelectItem>
               ))}
