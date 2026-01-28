@@ -117,6 +117,46 @@ export default function MatchDetail() {
     };
   };
 
+  // Get alternative Over/Under lines
+  const getAlternativeLines = () => {
+    if (!match?.odds) return null;
+    const alt = match.odds["Over/Under Alternative"] || {};
+    if (Object.keys(alt).length === 0) return null;
+    
+    // Group by line value
+    const lines = {};
+    Object.entries(alt).forEach(([key, value]) => {
+      const parts = key.split(' ');
+      const type = parts[0]; // "Over" or "Under"
+      const line = parts[1]; // "1.5", "2.5", "3.5", etc.
+      
+      if (!lines[line]) {
+        lines[line] = {};
+      }
+      lines[line][type] = value;
+      lines[line][`${type}Prob`] = oddsToProbability(value);
+    });
+    
+    return lines;
+  };
+
+  // Get Handicap odds
+  const getHandicapOdds = () => {
+    if (!match?.odds) return null;
+    const handicap = match.odds["Handicap"] || {};
+    if (Object.keys(handicap).length === 0) return null;
+    
+    const result = {};
+    Object.entries(handicap).forEach(([key, value]) => {
+      result[key] = {
+        odds: value,
+        prob: oddsToProbability(value)
+      };
+    });
+    
+    return result;
+  };
+
   // Get BTTS odds (Both Teams to Score / Goal-Goal)
   const getBTTSOdds = () => {
     if (!match?.odds) return null;
