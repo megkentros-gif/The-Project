@@ -16,7 +16,10 @@ import {
   Shield,
   Goal,
   BarChart3,
-  Plus
+  Plus,
+  Newspaper,
+  Scale,
+  TrendingDown
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
