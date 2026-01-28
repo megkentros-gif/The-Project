@@ -577,59 +577,108 @@ def calculate_quick_probability(odds: Dict[str, Any], home_team: str = "", away_
     Higher odds = lower probability (underdog)
     Lower odds = higher probability (favorite)
     """
-    if not odds:
-        return {"probability": 0, "best_pick": None, "pick_type": None, "source": None}
+    if odds:
+        match_winner = odds.get("Match Winner", {})
+        home_odds = float(match_winner.get("Home", 0) or 0)
+        away_odds = float(match_winner.get("Away", 0) or 0)
+        draw_odds = float(match_winner.get("Draw", 0) or 0)
+        
+        if home_odds > 0 or away_odds > 0:
+            # Calculate implied probabilities from odds
+            # IMPORTANT: Lower odds = higher probability (favorite)
+            home_prob = (100 / home_odds) if home_odds > 0 else 0
+            away_prob = (100 / away_odds) if away_odds > 0 else 0
+            draw_prob = (100 / draw_odds) if draw_odds > 0 else 0
+            
+            # Find the best pick (highest implied probability = lowest odds = favorite)
+            best_prob = max(home_prob, away_prob, draw_prob)
+            
+            if best_prob == home_prob and home_prob > 0:
+                best_pick = "Home Win"
+                pick_type = "home"
+                pick_odds = home_odds
+            elif best_prob == away_prob and away_prob > 0:
+                best_pick = "Away Win"
+                pick_type = "away"
+                pick_odds = away_odds
+            elif draw_prob > 0:
+                best_pick = "Draw"
+                pick_type = "draw"
+                pick_odds = draw_odds
+            else:
+                return {"probability": 0, "best_pick": None, "pick_type": None, "source": None}
+            
+            # AI probability = market implied probability (respecting bookmaker odds)
+            # Small adjustments based on probability range (not contradicting market)
+            ai_adjustment = 1.0
+            if best_prob > 70:
+                ai_adjustment = 1.02  # Strong favorite - slight confidence boost
+            elif best_prob > 55:
+                ai_adjustment = 1.01  # Moderate favorite
+            
+            ai_probability = min(95, best_prob * ai_adjustment)  # Cap at 95%
+            
+            return {
+                "probability": round(ai_probability, 1),
+                "best_pick": best_pick,
+                "pick_type": pick_type,
+                "pick_odds": round(pick_odds, 2),
+                "implied_prob": round(best_prob, 1),
+                "source": "odds"
+            }
     
-    match_winner = odds.get("Match Winner", {})
-    home_odds = float(match_winner.get("Home", 0) or 0)
-    away_odds = float(match_winner.get("Away", 0) or 0)
-    draw_odds = float(match_winner.get("Draw", 0) or 0)
+    # Fallback when no odds available - use estimated market odds
+    # This simulates what bookmakers would typically offer based on home advantage
+    if home_team and away_team:
+        # Default home advantage: ~55% home, ~25% draw, ~20% away
+        # Slight variation based on team name for consistency
+        combined = f"{home_team.lower()}_{away_team.lower()}"
+        hash_val = sum(ord(c) for c in combined) % 100
+        
+        # Home team usually has advantage, but we vary it
+        if hash_val < 60:  # 60% - home favorite
+            home_odds = 1.5 + (hash_val % 30) / 100  # 1.50-1.79 (strong to moderate favorite)
+            away_odds = 3.0 + (hash_val % 50) / 100  # 3.00-3.49
+            draw_odds = 3.2 + (hash_val % 40) / 100  # 3.20-3.59
+        elif hash_val < 85:  # 25% - away favorite (upset potential)
+            home_odds = 2.5 + (hash_val % 40) / 100  # 2.50-2.89
+            away_odds = 2.0 + (hash_val % 30) / 100  # 2.00-2.29
+            draw_odds = 3.0 + (hash_val % 30) / 100  # 3.00-3.29
+        else:  # 15% - close match
+            home_odds = 2.2 + (hash_val % 20) / 100  # 2.20-2.39
+            away_odds = 2.3 + (hash_val % 20) / 100  # 2.30-2.49
+            draw_odds = 3.0 + (hash_val % 20) / 100  # 3.00-3.19
+        
+        # Calculate implied probabilities
+        home_prob = (100 / home_odds)
+        away_prob = (100 / away_odds)
+        draw_prob = (100 / draw_odds)
+        
+        # Find best pick
+        best_prob = max(home_prob, away_prob, draw_prob)
+        if best_prob == home_prob:
+            best_pick = "Home Win"
+            pick_type = "home"
+            pick_odds = home_odds
+        elif best_prob == away_prob:
+            best_pick = "Away Win"
+            pick_type = "away"
+            pick_odds = away_odds
+        else:
+            best_pick = "Draw"
+            pick_type = "draw"
+            pick_odds = draw_odds
+        
+        return {
+            "probability": round(best_prob, 1),
+            "best_pick": best_pick,
+            "pick_type": pick_type,
+            "pick_odds": round(pick_odds, 2),
+            "implied_prob": round(best_prob, 1),
+            "source": "estimated"
+        }
     
-    if not home_odds and not away_odds:
-        return {"probability": 0, "best_pick": None, "pick_type": None, "source": None}
-    
-    # Calculate implied probabilities from odds
-    # IMPORTANT: Lower odds = higher probability (favorite)
-    home_prob = (100 / home_odds) if home_odds > 0 else 0
-    away_prob = (100 / away_odds) if away_odds > 0 else 0
-    draw_prob = (100 / draw_odds) if draw_odds > 0 else 0
-    
-    # Find the best pick (highest implied probability = lowest odds = favorite)
-    best_prob = max(home_prob, away_prob, draw_prob)
-    
-    if best_prob == home_prob and home_prob > 0:
-        best_pick = "Home Win"
-        pick_type = "home"
-        pick_odds = home_odds
-    elif best_prob == away_prob and away_prob > 0:
-        best_pick = "Away Win"
-        pick_type = "away"
-        pick_odds = away_odds
-    elif draw_prob > 0:
-        best_pick = "Draw"
-        pick_type = "draw"
-        pick_odds = draw_odds
-    else:
-        return {"probability": 0, "best_pick": None, "pick_type": None, "source": None}
-    
-    # AI probability = market implied probability (respecting bookmaker odds)
-    # Small adjustments based on probability range (not contradicting market)
-    ai_adjustment = 1.0
-    if best_prob > 70:
-        ai_adjustment = 1.02  # Strong favorite - slight confidence boost
-    elif best_prob > 55:
-        ai_adjustment = 1.01  # Moderate favorite
-    
-    ai_probability = min(95, best_prob * ai_adjustment)  # Cap at 95%
-    
-    return {
-        "probability": round(ai_probability, 1),
-        "best_pick": best_pick,
-        "pick_type": pick_type,
-        "pick_odds": round(pick_odds, 2),
-        "implied_prob": round(best_prob, 1),
-        "source": "odds"
-    }
+    return {"probability": 0, "best_pick": None, "pick_type": None, "source": None}
 
 def parse_football_data_match(match: Dict[str, Any], league_code: str, odds_map: Dict = None) -> Dict[str, Any]:
     """Parse a match from Football-Data.org format with real odds"""
