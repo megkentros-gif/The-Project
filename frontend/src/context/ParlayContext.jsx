@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 const ParlayContext = createContext();
 
@@ -8,41 +8,92 @@ export function ParlayProvider({ children }) {
     const saved = localStorage.getItem("parlayItems");
     return saved ? JSON.parse(saved) : [];
   });
+  
+  const [isOpen, setIsOpen] = useState(false);
 
   // Save to localStorage whenever items change
   useEffect(() => {
     localStorage.setItem("parlayItems", JSON.stringify(parlayItems));
   }, [parlayItems]);
 
-  const addToParlay = (item) => {
-    // Accept and store object with {home_team, away_team, selection_name, price}
+  const addToParlay = useCallback((item) => {
+    // Build standardized parlay item with market type
     const parlayItem = {
       match_id: item.match_id || item.matchId,
       home_team: item.home_team,
       away_team: item.away_team,
       selection_name: item.selection_name || item.selection,
-      price: item.price || item.odds,
-      match_name: item.match_name || `${item.home_team} vs ${item.away_team}`
+      price: parseFloat(item.price || item.odds) || 1.0,
+      match_name: item.match_name || `${item.home_team} vs ${item.away_team}`,
+      market: item.market || "1X2", // Market type: 1X2, Over/Under, BTTS, Handicap
+      league: item.league || "",
+      sport: item.sport || "football"
     };
 
-    // Check if match already in parlay
-    if (parlayItems.some(p => p.match_id === parlayItem.match_id)) {
-      return { success: false, message: "This match is already in your parlay" };
+    setParlayItems(prev => {
+      // Check if this match already exists in parlay
+      const existingIndex = prev.findIndex(p => p.match_id === parlayItem.match_id);
+      
+      if (existingIndex >= 0) {
+        // Replace existing bet with new one (different market or selection)
+        const updated = [...prev];
+        updated[existingIndex] = parlayItem;
+        return updated;
+      }
+      
+      // Add new bet
+      return [...prev, parlayItem];
+    });
+    
+    return { success: true, message: "Added to parlay!" };
+  }, []);
+
+  const removeFromParlay = useCallback((matchId) => {
+    setParlayItems(prev => prev.filter(p => p.match_id !== matchId));
+  }, []);
+
+  const clearParlay = useCallback(() => {
+    setParlayItems([]);
+  }, []);
+
+  const getParlayCount = useCallback(() => parlayItems.length, [parlayItems]);
+
+  const isInParlay = useCallback((matchId) => {
+    return parlayItems.some(p => p.match_id === matchId);
+  }, [parlayItems]);
+
+  const getSelectionForMatch = useCallback((matchId) => {
+    return parlayItems.find(p => p.match_id === matchId);
+  }, [parlayItems]);
+
+  // Calculate total odds and potential return
+  const calculateTotals = useCallback((stake = 10) => {
+    if (parlayItems.length === 0) {
+      return { totalOdds: 0, potentialReturn: 0, probability: 0 };
     }
     
-    setParlayItems([...parlayItems, parlayItem]);
-    return { success: true, message: "Added to parlay!" };
-  };
+    const totalOdds = parlayItems.reduce((acc, item) => acc * (item.price || 1), 1);
+    const potentialReturn = totalOdds * stake;
+    const probability = (1 / totalOdds) * 100;
+    
+    return {
+      totalOdds: parseFloat(totalOdds.toFixed(2)),
+      potentialReturn: parseFloat(potentialReturn.toFixed(2)),
+      probability: parseFloat(probability.toFixed(1))
+    };
+  }, [parlayItems]);
 
-  const removeFromParlay = (matchId) => {
-    setParlayItems(parlayItems.filter(p => p.match_id !== matchId));
-  };
+  const toggleSidebar = useCallback(() => {
+    setIsOpen(prev => !prev);
+  }, []);
 
-  const clearParlay = () => {
-    setParlayItems([]);
-  };
+  const openSidebar = useCallback(() => {
+    setIsOpen(true);
+  }, []);
 
-  const getParlayCount = () => parlayItems.length;
+  const closeSidebar = useCallback(() => {
+    setIsOpen(false);
+  }, []);
 
   return (
     <ParlayContext.Provider value={{
@@ -51,7 +102,14 @@ export function ParlayProvider({ children }) {
       addToParlay,
       removeFromParlay,
       clearParlay,
-      getParlayCount
+      getParlayCount,
+      isInParlay,
+      getSelectionForMatch,
+      calculateTotals,
+      isOpen,
+      toggleSidebar,
+      openSidebar,
+      closeSidebar
     }}>
       {children}
     </ParlayContext.Provider>
