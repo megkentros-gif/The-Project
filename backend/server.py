@@ -338,9 +338,9 @@ async def get_matches(
         date_from = date
         date_to = date
     
-    # Current season
-    current_year = today.year
-    season = current_year if today.month >= 7 else current_year - 1
+    # API-Football free tier only supports 2022-2024 seasons
+    # Use 2024 season for current fixtures
+    season = 2024
     
     # Fetch football matches - limit to 2 leagues at a time to avoid rate limits
     if sport is None or sport == "football":
@@ -647,9 +647,8 @@ async def calculate_parlay(request: ParlayRequest):
 async def get_standings(league_id: str):
     """Get league standings"""
     
-    # Current season
-    today = datetime.now()
-    season = today.year if today.month >= 7 else today.year - 1
+    # API-Football free tier only supports 2022-2024 seasons
+    season = 2024
     
     # Check if it's a basketball league
     if league_id in BASKETBALL_LEAGUES or league_id == "EURO":
