@@ -191,9 +191,8 @@ async def fetch_real_odds(sport_key: str, use_cache: bool = True) -> Dict[str, D
         try:
             url = f"{ODDS_API_BASE}/sports/{sport_key}/odds"
             # Only include BTTS for soccer leagues (not basketball)
+            # Note: BTTS may not be available for all leagues
             markets = "h2h,totals"
-            if sport_key.startswith("soccer_"):
-                markets = "h2h,totals,btts"
             
             params = {
                 "apiKey": ODDS_API_KEY,
