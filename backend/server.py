@@ -175,6 +175,87 @@ async def fetch_api_basketball(endpoint: str, use_cache: bool = True) -> Dict[st
             logger.error(f"API-Basketball exception: {e}")
             return {}
 
+async def fetch_real_odds(sport_key: str, use_cache: bool = True) -> Dict[str, Dict]:
+    """Fetch real odds from The Odds API"""
+    if not ODDS_API_KEY:
+        logger.warning("ODDS_API_KEY not configured")
+        return {}
+    
+    cache_key = f"odds:{sport_key}"
+    if use_cache:
+        cached = get_cache(cache_key)
+        if cached:
+            return cached
+    
+    async with httpx.AsyncClient() as http_client:
+        try:
+            url = f"{ODDS_API_BASE}/sports/{sport_key}/odds"
+            params = {
+                "apiKey": ODDS_API_KEY,
+                "regions": "eu,uk",
+                "markets": "h2h,totals",
+                "oddsFormat": "decimal"
+            }
+            logger.info(f"Fetching odds: {url}")
+            response = await http_client.get(url, params=params, timeout=30.0)
+            
+            if response.status_code == 200:
+                data = response.json()
+                # Index by match (home_team vs away_team)
+                odds_map = {}
+                for match in data:
+                    home = match.get("home_team", "").lower()
+                    away = match.get("away_team", "").lower()
+                    key = f"{home}_{away}"
+                    
+                    # Get best odds from all bookmakers
+                    best_odds = {"Match Winner": {}, "Over/Under 2.5": {}, "bookmakers": []}
+                    
+                    for bookmaker in match.get("bookmakers", []):
+                        book_name = bookmaker.get("title", "")
+                        best_odds["bookmakers"].append(book_name)
+                        
+                        for market in bookmaker.get("markets", []):
+                            market_key = market.get("key", "")
+                            
+                            if market_key == "h2h":
+                                for outcome in market.get("outcomes", []):
+                                    name = outcome.get("name", "")
+                                    price = outcome.get("price", 0)
+                                    
+                                    if name == match.get("home_team"):
+                                        if "Home" not in best_odds["Match Winner"] or price > float(best_odds["Match Winner"].get("Home", 0)):
+                                            best_odds["Match Winner"]["Home"] = str(round(price, 2))
+                                    elif name == match.get("away_team"):
+                                        if "Away" not in best_odds["Match Winner"] or price > float(best_odds["Match Winner"].get("Away", 0)):
+                                            best_odds["Match Winner"]["Away"] = str(round(price, 2))
+                                    elif name == "Draw":
+                                        if "Draw" not in best_odds["Match Winner"] or price > float(best_odds["Match Winner"].get("Draw", 0)):
+                                            best_odds["Match Winner"]["Draw"] = str(round(price, 2))
+                            
+                            elif market_key == "totals":
+                                for outcome in market.get("outcomes", []):
+                                    name = outcome.get("name", "")
+                                    price = outcome.get("price", 0)
+                                    point = outcome.get("point", 2.5)
+                                    
+                                    if point == 2.5:
+                                        if name == "Over":
+                                            best_odds["Over/Under 2.5"]["Over"] = str(round(price, 2))
+                                        elif name == "Under":
+                                            best_odds["Over/Under 2.5"]["Under"] = str(round(price, 2))
+                    
+                    odds_map[key] = best_odds
+                
+                set_cache(cache_key, odds_map)
+                return odds_map
+            else:
+                logger.error(f"Odds API error: {response.status_code} - {response.text[:200]}")
+                return {}
+        except Exception as e:
+            logger.error(f"Odds API exception: {e}")
+            return {}
+
 async def get_ai_analysis(match_data: Dict[str, Any]) -> Dict[str, Any]:
     """Get AI analysis for a match using GPT-5.2"""
     if not EMERGENT_LLM_KEY:
