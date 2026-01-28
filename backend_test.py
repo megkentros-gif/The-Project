@@ -384,19 +384,25 @@ class BettingAPITester:
 
     def run_all_tests(self):
         """Run all API tests"""
-        print("🚀 Starting Backend API Tests for Sports Betting Guide")
+        print("🚀 Starting Backend API Tests for BetSmart AI Enhancements")
         print("=" * 60)
         
         # Test basic connectivity
         self.test_root_endpoint()
         
-        # Test leagues
+        # Test leagues (including basketball_euroleague check)
         leagues = self.test_leagues_endpoint()
         
-        # Test matches
+        # Test Premier League matches specifically
+        pl_matches = self.test_premier_league_matches()
+        
+        # Test general matches
         matches = self.test_matches_endpoint()
         
-        # Test match details
+        # Test extended markets structure
+        self.test_extended_markets_structure()
+        
+        # Test match details with enhanced AI analysis
         if matches:
             self.test_match_detail_endpoint(matches)
         
