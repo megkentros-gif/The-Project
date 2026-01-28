@@ -709,7 +709,7 @@ def parse_football_data_match(match: Dict[str, Any], league_code: str, odds_map:
                     break
     
     # Calculate quick AI probability for featured picks
-    quick_analysis = calculate_quick_probability(match_odds)
+    quick_analysis = calculate_quick_probability(match_odds, home_team, away_team)
     
     return {
         "id": f"fd_{match.get('id', '')}",
