@@ -570,6 +570,57 @@ def normalize_team_name(name: str) -> str:
     name = " ".join(name.split())
     return name.strip()
 
+def calculate_quick_probability(odds: Dict[str, Any]) -> Dict[str, Any]:
+    """Calculate quick AI probability score based on odds - for featured picks"""
+    if not odds:
+        return {"probability": 0, "best_pick": None, "pick_type": None}
+    
+    match_winner = odds.get("Match Winner", {})
+    home_odds = float(match_winner.get("Home", 0) or 0)
+    away_odds = float(match_winner.get("Away", 0) or 0)
+    draw_odds = float(match_winner.get("Draw", 0) or 0)
+    
+    if not home_odds and not away_odds:
+        return {"probability": 0, "best_pick": None, "pick_type": None}
+    
+    # Calculate implied probabilities from odds
+    home_prob = (100 / home_odds) if home_odds > 0 else 0
+    away_prob = (100 / away_odds) if away_odds > 0 else 0
+    draw_prob = (100 / draw_odds) if draw_odds > 0 else 0
+    
+    # Find the best pick (highest implied probability = lowest odds = favorite)
+    # AI confidence is higher when odds strongly favor one outcome
+    best_prob = max(home_prob, away_prob, draw_prob)
+    
+    if best_prob == home_prob:
+        best_pick = "Home Win"
+        pick_type = "home"
+    elif best_prob == away_prob:
+        best_pick = "Away Win"
+        pick_type = "away"
+    else:
+        best_pick = "Draw"
+        pick_type = "draw"
+    
+    # AI probability boost: Strong favorites get higher confidence
+    # Adjust probability to represent AI confidence (add variance factor)
+    ai_adjustment = 1.0
+    if best_prob > 70:
+        ai_adjustment = 1.05  # Very strong favorite - boost confidence
+    elif best_prob > 55:
+        ai_adjustment = 1.02  # Moderate favorite - slight boost
+    elif best_prob < 40:
+        ai_adjustment = 0.95  # Close match - reduce overconfidence
+    
+    ai_probability = min(95, best_prob * ai_adjustment)  # Cap at 95%
+    
+    return {
+        "probability": round(ai_probability, 1),
+        "best_pick": best_pick,
+        "pick_type": pick_type,
+        "implied_prob": round(best_prob, 1)
+    }
+
 def parse_football_data_match(match: Dict[str, Any], league_code: str, odds_map: Dict = None) -> Dict[str, Any]:
     """Parse a match from Football-Data.org format with real odds"""
     league_info = FOOTBALL_LEAGUES.get(league_code, {"name": "Unknown", "code": league_code})
@@ -627,6 +678,9 @@ def parse_football_data_match(match: Dict[str, Any], league_code: str, odds_map:
                     bookmakers_list = odds_data.get("bookmakers", [])[:5]
                     break
     
+    # Calculate quick AI probability for featured picks
+    quick_analysis = calculate_quick_probability(match_odds)
+    
     return {
         "id": f"fd_{match.get('id', '')}",
         "sport": "football",
@@ -643,7 +697,8 @@ def parse_football_data_match(match: Dict[str, Any], league_code: str, odds_map:
         "away_score": match.get("score", {}).get("fullTime", {}).get("away"),
         "has_odds": has_odds,
         "odds": match_odds,
-        "bookmakers": bookmakers_list
+        "bookmakers": bookmakers_list,
+        "quick_analysis": quick_analysis
     }
 
 def parse_basketball_game(game: Dict[str, Any], league_info: Dict[str, str]) -> Dict[str, Any]:
