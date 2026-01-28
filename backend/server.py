@@ -10,6 +10,7 @@ from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
 import httpx
+import asyncio
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 ROOT_DIR = Path(__file__).parent
@@ -24,7 +25,7 @@ db = client[os.environ['DB_NAME']]
 API_FOOTBALL_KEY = os.environ.get('API_FOOTBALL_KEY', '')
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 
-# API-Football base URL (via RapidAPI or direct)
+# API-Football base URL
 API_FOOTBALL_BASE = "https://v3.football.api-sports.io"
 API_BASKETBALL_BASE = "https://v1.basketball.api-sports.io"
 
@@ -40,6 +41,10 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Simple in-memory cache
+cache = {}
+CACHE_TTL = 300  # 5 minutes
 
 # League IDs for API-Football (top 5 + European competitions)
 FOOTBALL_LEAGUES = {
@@ -76,13 +81,6 @@ class MatchBase(BaseModel):
     has_odds: bool = False
     odds: Optional[Dict[str, Any]] = None
 
-class MatchDetail(MatchBase):
-    head_to_head: Optional[List[Dict[str, Any]]] = []
-    home_form: Optional[List[str]] = []
-    away_form: Optional[List[str]] = []
-    injuries: Optional[Dict[str, List[Dict[str, str]]]] = {}
-    ai_analysis: Optional[Dict[str, Any]] = None
-
 class ParlayItem(BaseModel):
     match_id: str
     selection: str
@@ -99,12 +97,29 @@ class ParlayResponse(BaseModel):
     potential_return: float
     risk_assessment: str
 
-# Helper functions
-async def fetch_api_football(endpoint: str) -> Dict[str, Any]:
-    """Fetch data from API-Football"""
+def get_cache(key: str) -> Optional[Any]:
+    """Get from cache if not expired"""
+    if key in cache:
+        data, timestamp = cache[key]
+        if datetime.now().timestamp() - timestamp < CACHE_TTL:
+            return data
+    return None
+
+def set_cache(key: str, data: Any):
+    """Set cache with timestamp"""
+    cache[key] = (data, datetime.now().timestamp())
+
+async def fetch_api_football(endpoint: str, use_cache: bool = True) -> Dict[str, Any]:
+    """Fetch data from API-Football with caching and rate limit handling"""
     if not API_FOOTBALL_KEY:
         logger.warning("API_FOOTBALL_KEY not configured")
         return {}
+    
+    cache_key = f"football:{endpoint}"
+    if use_cache:
+        cached = get_cache(cache_key)
+        if cached:
+            return cached
     
     headers = {
         "x-apisports-key": API_FOOTBALL_KEY,
@@ -117,8 +132,14 @@ async def fetch_api_football(endpoint: str) -> Dict[str, Any]:
             response = await http_client.get(url, headers=headers, timeout=30.0)
             if response.status_code == 200:
                 data = response.json()
-                if data.get("errors"):
+                if data.get("errors") and len(data.get("errors")) > 0:
                     logger.error(f"API-Football error: {data.get('errors')}")
+                    # Check for rate limit
+                    if 'rateLimit' in str(data.get('errors')):
+                        await asyncio.sleep(6)  # Wait before retry
+                        return {}
+                else:
+                    set_cache(cache_key, data)
                 return data
             logger.error(f"API-Football HTTP error: {response.status_code}")
             return {}
@@ -126,10 +147,16 @@ async def fetch_api_football(endpoint: str) -> Dict[str, Any]:
             logger.error(f"API-Football exception: {e}")
             return {}
 
-async def fetch_api_basketball(endpoint: str) -> Dict[str, Any]:
-    """Fetch data from API-Basketball"""
-    if not API_FOOTBALL_KEY:  # Same key works for all API-Sports
+async def fetch_api_basketball(endpoint: str, use_cache: bool = True) -> Dict[str, Any]:
+    """Fetch data from API-Basketball with caching"""
+    if not API_FOOTBALL_KEY:
         return {}
+    
+    cache_key = f"basketball:{endpoint}"
+    if use_cache:
+        cached = get_cache(cache_key)
+        if cached:
+            return cached
     
     headers = {
         "x-apisports-key": API_FOOTBALL_KEY,
@@ -140,7 +167,9 @@ async def fetch_api_basketball(endpoint: str) -> Dict[str, Any]:
             url = f"{API_BASKETBALL_BASE}{endpoint}"
             response = await http_client.get(url, headers=headers, timeout=30.0)
             if response.status_code == 200:
-                return response.json()
+                data = response.json()
+                set_cache(cache_key, data)
+                return data
             return {}
         except Exception as e:
             logger.error(f"API-Basketball exception: {e}")
@@ -294,57 +323,62 @@ async def get_leagues():
 async def get_matches(
     league: Optional[str] = None, 
     sport: Optional[str] = None,
-    only_with_odds: bool = True,
+    only_with_odds: bool = False,
     date: Optional[str] = None
 ):
     """Get upcoming matches with odds from API-Football/API-Basketball"""
     all_matches = []
     
-    # Default to today and next 7 days
+    # Use current real date
+    today = datetime.now()
     if not date:
-        today = datetime.now(timezone.utc)
         date_from = today.strftime("%Y-%m-%d")
         date_to = (today + timedelta(days=7)).strftime("%Y-%m-%d")
     else:
         date_from = date
         date_to = date
     
-    # Fetch football matches
+    # Current season
+    current_year = today.year
+    season = current_year if today.month >= 7 else current_year - 1
+    
+    # Fetch football matches - limit to 2 leagues at a time to avoid rate limits
     if sport is None or sport == "football":
         leagues_to_fetch = []
         if league:
-            # Find by league_id or code
             for lid, info in FOOTBALL_LEAGUES.items():
                 if lid == league or info.get("code") == league:
                     leagues_to_fetch.append((lid, info))
         else:
-            leagues_to_fetch = list(FOOTBALL_LEAGUES.items())
+            # Fetch only top 3 leagues to avoid rate limits
+            leagues_to_fetch = list(FOOTBALL_LEAGUES.items())[:3]
         
         for league_id, league_info in leagues_to_fetch:
             # Fetch fixtures
             fixtures_data = await fetch_api_football(
-                f"/fixtures?league={league_id}&season=2024&from={date_from}&to={date_to}"
+                f"/fixtures?league={league_id}&season={season}&from={date_from}&to={date_to}"
             )
             fixtures = fixtures_data.get("response", [])
             
-            # Fetch odds for this league
-            odds_data = await fetch_api_football(
-                f"/odds?league={league_id}&season=2024"
-            )
+            # Build odds map from fixture data (odds endpoint may have rate limits)
             odds_by_fixture = {}
-            for odds in odds_data.get("response", []):
-                fixture_id = odds.get("fixture", {}).get("id")
-                if fixture_id:
-                    bookmakers = odds.get("bookmakers", [])
-                    if bookmakers:
-                        # Get first bookmaker's odds
-                        bets = bookmakers[0].get("bets", [])
-                        odds_dict = {}
-                        for bet in bets:
-                            bet_name = bet.get("name", "")
-                            values = bet.get("values", [])
-                            odds_dict[bet_name] = {v.get("value"): v.get("odd") for v in values}
-                        odds_by_fixture[fixture_id] = odds_dict
+            
+            # Try to get odds if we have fixtures
+            if fixtures:
+                await asyncio.sleep(0.5)  # Small delay to avoid rate limit
+                odds_data = await fetch_api_football(f"/odds?league={league_id}&season={season}")
+                for odds in odds_data.get("response", []):
+                    fixture_id = odds.get("fixture", {}).get("id")
+                    if fixture_id:
+                        bookmakers = odds.get("bookmakers", [])
+                        if bookmakers:
+                            bets = bookmakers[0].get("bets", [])
+                            odds_dict = {}
+                            for bet in bets:
+                                bet_name = bet.get("name", "")
+                                values = bet.get("values", [])
+                                odds_dict[bet_name] = {v.get("value"): v.get("odd") for v in values}
+                            odds_by_fixture[fixture_id] = odds_dict
             
             for fixture in fixtures:
                 fixture_id = fixture.get("fixture", {}).get("id")
@@ -356,34 +390,33 @@ async def get_matches(
                 
                 parsed = parse_football_fixture(fixture, league_info, fixture_odds)
                 all_matches.append(parsed)
+            
+            await asyncio.sleep(0.5)  # Rate limit protection
     
     # Fetch basketball matches
     if sport is None or sport == "basketball":
-        if league is None or league in BASKETBALL_LEAGUES or league == "EURO":
+        if league is None or league in BASKETBALL_LEAGUES or league == "EURO" or league == "120":
             for league_id, league_info in BASKETBALL_LEAGUES.items():
-                # Fetch games
                 games_data = await fetch_api_basketball(
                     f"/games?league={league_id}&season=2024-2025&date={date_from}"
                 )
                 games = games_data.get("response", [])
                 
-                # Fetch odds
-                odds_data = await fetch_api_basketball(
-                    f"/odds?league={league_id}&season=2024-2025"
-                )
                 odds_by_game = {}
-                for odds in odds_data.get("response", []):
-                    game_id = odds.get("game", {}).get("id")
-                    if game_id:
-                        bookmakers = odds.get("bookmakers", [])
-                        if bookmakers:
-                            bets = bookmakers[0].get("bets", [])
-                            odds_dict = {}
-                            for bet in bets:
-                                bet_name = bet.get("name", "")
-                                values = bet.get("values", [])
-                                odds_dict[bet_name] = {v.get("value"): v.get("odd") for v in values}
-                            odds_by_game[game_id] = odds_dict
+                if games:
+                    odds_data = await fetch_api_basketball(f"/odds?league={league_id}&season=2024-2025")
+                    for odds in odds_data.get("response", []):
+                        game_id = odds.get("game", {}).get("id")
+                        if game_id:
+                            bookmakers = odds.get("bookmakers", [])
+                            if bookmakers:
+                                bets = bookmakers[0].get("bets", [])
+                                odds_dict = {}
+                                for bet in bets:
+                                    bet_name = bet.get("name", "")
+                                    values = bet.get("values", [])
+                                    odds_dict[bet_name] = {v.get("value"): v.get("odd") for v in values}
+                                odds_by_game[game_id] = odds_dict
                 
                 for game in games:
                     game_id = game.get("id")
@@ -419,6 +452,7 @@ async def get_match_detail(match_id: str):
         league_info = FOOTBALL_LEAGUES.get(league_id, {"name": "Unknown", "code": ""})
         
         # Fetch odds
+        await asyncio.sleep(0.5)
         odds_data = await fetch_api_football(f"/odds?fixture={fixture_id}")
         odds_response = odds_data.get("response", [])
         fixture_odds = None
@@ -438,6 +472,7 @@ async def get_match_detail(match_id: str):
         home_team_id = fixture.get("teams", {}).get("home", {}).get("id")
         away_team_id = fixture.get("teams", {}).get("away", {}).get("id")
         
+        await asyncio.sleep(0.5)
         h2h_data = await fetch_api_football(f"/fixtures/headtohead?h2h={home_team_id}-{away_team_id}&last=5")
         h2h_fixtures = h2h_data.get("response", [])
         
@@ -453,7 +488,9 @@ async def get_match_detail(match_id: str):
         ]
         
         # Fetch team form (last 5 matches)
+        await asyncio.sleep(0.5)
         home_form_data = await fetch_api_football(f"/fixtures?team={home_team_id}&last=5")
+        await asyncio.sleep(0.5)
         away_form_data = await fetch_api_football(f"/fixtures?team={away_team_id}&last=5")
         
         def extract_form(team_id, fixtures_list):
@@ -483,6 +520,7 @@ async def get_match_detail(match_id: str):
         match["away_form"] = extract_form(away_team_id, away_form_data.get("response", []))
         
         # Fetch injuries
+        await asyncio.sleep(0.5)
         injuries_data = await fetch_api_football(f"/injuries?fixture={fixture_id}")
         injuries = injuries_data.get("response", [])
         
@@ -525,7 +563,6 @@ async def get_match_detail(match_id: str):
     elif match_id.startswith("bb_"):
         game_id = match_id[3:]
         
-        # Fetch game details
         game_data = await fetch_api_basketball(f"/games?id={game_id}")
         games = game_data.get("response", [])
         
@@ -536,7 +573,6 @@ async def get_match_detail(match_id: str):
         league_id = str(game.get("league", {}).get("id", ""))
         league_info = BASKETBALL_LEAGUES.get(league_id, {"name": "EuroLeague", "code": "EURO"})
         
-        # Fetch odds
         odds_data = await fetch_api_basketball(f"/odds?game={game_id}")
         odds_response = odds_data.get("response", [])
         game_odds = None
@@ -552,7 +588,7 @@ async def get_match_detail(match_id: str):
         
         match = parse_basketball_game(game, league_info, game_odds)
         match["head_to_head"] = []
-        match["home_form"] = ["W", "W", "L", "W", "W"]  # Placeholder
+        match["home_form"] = ["W", "W", "L", "W", "W"]
         match["away_form"] = ["L", "W", "W", "D", "L"]
         match["injuries"] = {"home": [], "away": []}
         
@@ -611,6 +647,10 @@ async def calculate_parlay(request: ParlayRequest):
 async def get_standings(league_id: str):
     """Get league standings"""
     
+    # Current season
+    today = datetime.now()
+    season = today.year if today.month >= 7 else today.year - 1
+    
     # Check if it's a basketball league
     if league_id in BASKETBALL_LEAGUES or league_id == "EURO":
         actual_id = "120" if league_id == "EURO" else league_id
@@ -653,7 +693,7 @@ async def get_standings(league_id: str):
     if actual_id not in FOOTBALL_LEAGUES:
         raise HTTPException(status_code=404, detail="League not found")
     
-    data = await fetch_api_football(f"/standings?league={actual_id}&season=2024")
+    data = await fetch_api_football(f"/standings?league={actual_id}&season={season}")
     standings_response = data.get("response", [])
     
     standings = []
