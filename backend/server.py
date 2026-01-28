@@ -461,6 +461,92 @@ def parse_basketball_game(game: Dict[str, Any], league_info: Dict[str, str]) -> 
         },
     }
 
+async def fetch_basketball_from_odds_api(sport_key: str) -> List[Dict[str, Any]]:
+    """Fetch basketball games directly from The Odds API with real odds"""
+    if not ODDS_API_KEY:
+        return []
+    
+    cache_key = f"basketball_odds:{sport_key}"
+    cached = get_cache(cache_key)
+    if cached:
+        return cached
+    
+    async with httpx.AsyncClient() as http_client:
+        try:
+            url = f"{ODDS_API_BASE}/sports/{sport_key}/odds"
+            params = {
+                "apiKey": ODDS_API_KEY,
+                "regions": "eu,uk",
+                "markets": "h2h,totals",
+                "oddsFormat": "decimal"
+            }
+            response = await http_client.get(url, params=params, timeout=30.0)
+            
+            if response.status_code == 200:
+                data = response.json()
+                games = []
+                
+                for match in data:
+                    # Get best odds
+                    best_odds = {"Match Winner": {}, "Over/Under": {}, "bookmakers": []}
+                    
+                    for bookmaker in match.get("bookmakers", []):
+                        book_name = bookmaker.get("title", "")
+                        best_odds["bookmakers"].append(book_name)
+                        
+                        for market in bookmaker.get("markets", []):
+                            market_key = market.get("key", "")
+                            
+                            if market_key == "h2h":
+                                for outcome in market.get("outcomes", []):
+                                    name = outcome.get("name", "")
+                                    price = outcome.get("price", 0)
+                                    
+                                    if name == match.get("home_team"):
+                                        if "Home" not in best_odds["Match Winner"] or price > float(best_odds["Match Winner"].get("Home", 0)):
+                                            best_odds["Match Winner"]["Home"] = str(round(price, 2))
+                                    elif name == match.get("away_team"):
+                                        if "Away" not in best_odds["Match Winner"] or price > float(best_odds["Match Winner"].get("Away", 0)):
+                                            best_odds["Match Winner"]["Away"] = str(round(price, 2))
+                            
+                            elif market_key == "totals":
+                                for outcome in market.get("outcomes", []):
+                                    name = outcome.get("name", "")
+                                    price = outcome.get("price", 0)
+                                    point = outcome.get("point", 0)
+                                    
+                                    if name == "Over":
+                                        best_odds["Over/Under"][f"Over {point}"] = str(round(price, 2))
+                                    elif name == "Under":
+                                        best_odds["Over/Under"][f"Under {point}"] = str(round(price, 2))
+                    
+                    game = {
+                        "id": f"bb_{match.get('id', '')}",
+                        "sport": "basketball",
+                        "league": "EuroLeague",
+                        "league_id": "basketball_euroleague",
+                        "league_code": "EURO",
+                        "home_team": match.get("home_team", "Unknown"),
+                        "away_team": match.get("away_team", "Unknown"),
+                        "home_logo": "",
+                        "away_logo": "",
+                        "match_date": match.get("commence_time", ""),
+                        "status": "NS",
+                        "home_score": None,
+                        "away_score": None,
+                        "has_odds": True,
+                        "odds": best_odds,
+                        "bookmakers": best_odds.get("bookmakers", [])[:5]
+                    }
+                    games.append(game)
+                
+                set_cache(cache_key, games)
+                return games
+            return []
+        except Exception as e:
+            logger.error(f"Basketball Odds API error: {e}")
+            return []
+
 # API Endpoints
 @api_router.get("/")
 async def root():
