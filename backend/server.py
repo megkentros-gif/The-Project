@@ -318,45 +318,64 @@ async def fetch_real_odds(sport_key: str, use_cache: bool = True) -> Dict[str, D
             return {}
 
 async def search_sports_news(home_team: str, away_team: str, sport: str = "football", league: str = "") -> str:
-    """Search for latest sports news using the Emergent LLM integration.
-    Note: Web search is performed by the LLM itself through its knowledge and training data,
-    augmented by asking for specific source checking."""
+    """Search for latest sports news using the Emergent LLM integration with web search tool.
+    Uses web search to check team news & lineups from Marca, Gazzetta, and BBC Sport,
+    plus recent form (last 5 matches) and head-to-head history."""
     if not EMERGENT_LLM_KEY:
         return "No news search available - API key not configured"
     
     try:
         # Determine which sources to search based on sport type
         if sport == "basketball" or "euroleague" in league.lower():
-            sources_hint = "Eurohoops, Basketnews, Sport24, Gazzetta.gr, SDNA"
+            sources = "Eurohoops, Basketnews, Sport24, Gazzetta dello Sport"
             sport_context = "EuroLeague basketball"
         else:
-            sources_hint = "Marca, AS, Gazzetta.gr, SDNA"
+            sources = "Marca, Gazzetta dello Sport, BBC Sport"
             sport_context = f"{league} football"
         
-        # Use Emergent LLM to provide analysis based on its knowledge
+        # Use Emergent LLM with web search capability for professional football analysis
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"news-search-{datetime.now().timestamp()}",
-            system_message=f"""You are a knowledgeable sports analyst with expertise in {sport_context}.
-            Provide relevant information about teams based on your knowledge, including:
-            1. Known injury situations and common injury-prone players
-            2. Typical team patterns and playing style
-            3. Historical performance context
-            4. Key players to watch
-            
-            Present the information as if summarizing recent reports from sports media sources.
-            Be concise but informative (max 250 words)."""
-        ).with_model("openai", "gpt-5.2")
-        
-        user_message = UserMessage(text=f"""Provide relevant match context for {home_team} vs {away_team} in {league}. 
-        
-Include:
-- Any known injury patterns or commonly injured players for both teams
-- Team form tendencies and playing style
-- Key factors that typically affect these teams' performances
-- Important players to watch
+            system_message=f"""You are a Professional Football Analyst specializing in {sport_context}.
 
-Format as a brief analyst report.""")
+Your PRIMARY task is to use web search to gather the LATEST information from these sources:
+- Marca (Spanish football news)
+- Gazzetta dello Sport (Italian sports news)
+- BBC Sport (English football coverage)
+
+For EACH team, you MUST search and report:
+1. TEAM NEWS & LINEUPS: Latest injury updates, suspensions, expected starting XI
+2. RECENT FORM: Results of their last 5 matches with scores
+3. HEAD-TO-HEAD: Historical record between these two teams
+
+Format your response as a professional analyst briefing with clear sections.
+Be factual and cite specific information found from the sources.
+Maximum 400 words."""
+        ).with_model("openai", "gpt-5.2").with_web_search()
+        
+        user_message = UserMessage(text=f"""As a Professional Football Analyst, search the web and provide a comprehensive pre-match briefing for:
+
+MATCH: {home_team} vs {away_team}
+COMPETITION: {league}
+
+Search {sources} and other reliable sources for:
+
+1. TEAM NEWS & LINEUPS
+   - Search for "{home_team} team news lineup injuries" 
+   - Search for "{away_team} team news lineup injuries"
+   - Report any confirmed absences, doubts, and expected formations
+
+2. RECENT FORM (Last 5 Matches)
+   - Search for "{home_team} recent results last 5 matches"
+   - Search for "{away_team} recent results last 5 matches"
+   - List each result with opponent and score
+
+3. HEAD-TO-HEAD HISTORY
+   - Search for "{home_team} vs {away_team} head to head history"
+   - Report recent meetings and overall record
+
+Provide factual, sourced information only. This is for professional betting analysis.""")
         
         response = await chat.send_message(user_message)
         return response if response else "No context information available"
