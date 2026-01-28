@@ -477,7 +477,7 @@ async def fetch_basketball_from_odds_api(sport_key: str) -> List[Dict[str, Any]]
             params = {
                 "apiKey": ODDS_API_KEY,
                 "regions": "eu,uk",
-                "markets": "h2h,totals",
+                "markets": "h2h,totals,btts",
                 "oddsFormat": "decimal"
             }
             response = await http_client.get(url, params=params, timeout=30.0)
