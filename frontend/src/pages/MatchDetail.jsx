@@ -234,6 +234,8 @@ export default function MatchDetail() {
 
   const SportIcon = match.sport === "basketball" ? Dribbble : Trophy;
   const overUnder = getOverUnderOdds();
+  const alternativeLines = getAlternativeLines();
+  const handicapOdds = getHandicapOdds();
   const btts = getBTTSOdds();
   const matchWinner = getMatchWinnerOdds();
 
