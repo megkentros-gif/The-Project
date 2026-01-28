@@ -193,7 +193,7 @@ async def fetch_real_odds(sport_key: str, use_cache: bool = True) -> Dict[str, D
             params = {
                 "apiKey": ODDS_API_KEY,
                 "regions": "eu,uk",
-                "markets": "h2h,totals,btts",
+                "markets": "h2h,totals",
                 "oddsFormat": "decimal"
             }
             logger.info(f"Fetching odds: {url}")
