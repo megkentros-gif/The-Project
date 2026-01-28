@@ -4,6 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+// EuroLeague team logo mapping using Wikipedia URLs
+const EUROLEAGUE_LOGOS = {
+  "panathinaikos": "https://upload.wikimedia.org/wikipedia/en/7/71/Panathinaikos_BC_logo.svg",
+  "olympiacos": "https://upload.wikimedia.org/wikipedia/en/1/1d/Olympiacos_BC_logo.svg",
+  "real madrid": "https://upload.wikimedia.org/wikipedia/en/1/1b/Real_Madrid_Baloncesto_logo.svg"
+};
+
 export default function MatchCard({ match, showAddToParlay = false, onAddToParlay }) {
   const formatDate = (dateStr) => {
     if (!dateStr) return "TBD";
@@ -47,6 +54,23 @@ export default function MatchCard({ match, showAddToParlay = false, onAddToParla
     }
   };
 
+  // Get EuroLeague logo if available
+  const getTeamLogo = (teamName, originalLogo) => {
+    if (!teamName) return originalLogo;
+    
+    // Check if this is a basketball match and if we have a logo mapping
+    if (match.sport === "basketball" && match.league && match.league.toLowerCase().includes("euro")) {
+      const normalizedName = teamName.toLowerCase();
+      for (const [key, logoUrl] of Object.entries(EUROLEAGUE_LOGOS)) {
+        if (normalizedName.includes(key)) {
+          return logoUrl;
+        }
+      }
+    }
+    
+    return originalLogo;
+  };
+
   // Extract odds from match data
   const getOdds = () => {
     if (!match.odds) return null;
@@ -60,6 +84,8 @@ export default function MatchCard({ match, showAddToParlay = false, onAddToParla
 
   const odds = getOdds();
   const SportIcon = match.sport === "basketball" ? Dribbble : Trophy;
+  const homeLogo = getTeamLogo(match.home_team, match.home_logo);
+  const awayLogo = getTeamLogo(match.away_team, match.away_logo);
 
   return (
     <Card 
@@ -93,9 +119,9 @@ export default function MatchCard({ match, showAddToParlay = false, onAddToParla
           <div className="flex items-center justify-between mb-4">
             {/* Home Team */}
             <div className="flex flex-col items-center text-center flex-1">
-              {match.home_logo ? (
+              {homeLogo ? (
                 <img 
-                  src={match.home_logo} 
+                  src={homeLogo} 
                   alt={match.home_team}
                   className="team-logo mb-2"
                   onError={(e) => {
@@ -129,9 +155,9 @@ export default function MatchCard({ match, showAddToParlay = false, onAddToParla
 
             {/* Away Team */}
             <div className="flex flex-col items-center text-center flex-1">
-              {match.away_logo ? (
+              {awayLogo ? (
                 <img 
-                  src={match.away_logo} 
+                  src={awayLogo} 
                   alt={match.away_team}
                   className="team-logo mb-2"
                   onError={(e) => {

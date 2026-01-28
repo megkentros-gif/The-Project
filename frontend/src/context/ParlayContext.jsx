@@ -15,16 +15,25 @@ export function ParlayProvider({ children }) {
   }, [parlayItems]);
 
   const addToParlay = (item) => {
+    // Accept object with {matchId, selection, price} and store it directly
+    // Normalize the object to ensure we have the right structure
+    const normalizedItem = {
+      matchId: item.matchId || item.match_id,
+      selection: item.selection,
+      price: item.price || item.odds
+    };
+
     // Check if match already in parlay
-    if (parlayItems.some(p => p.match_id === item.match_id)) {
+    if (parlayItems.some(p => (p.matchId === normalizedItem.matchId || p.match_id === normalizedItem.matchId))) {
       return { success: false, message: "This match is already in your parlay" };
     }
-    setParlayItems([...parlayItems, item]);
+    
+    setParlayItems([...parlayItems, normalizedItem]);
     return { success: true, message: "Added to parlay!" };
   };
 
   const removeFromParlay = (matchId) => {
-    setParlayItems(parlayItems.filter(p => p.match_id !== matchId));
+    setParlayItems(parlayItems.filter(p => p.matchId !== matchId && p.match_id !== matchId));
   };
 
   const clearParlay = () => {
