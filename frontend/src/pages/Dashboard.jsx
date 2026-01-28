@@ -131,6 +131,29 @@ export default function Dashboard() {
     return matches.filter(m => m.status === "NS" || m.status === "SCHEDULED" || m.status === "TIMED").length;
   };
 
+  // Get top 4 high-probability picks sorted by AI probability
+  const topPicks = useMemo(() => {
+    if (!matches || matches.length === 0) return [];
+    
+    // Filter matches with valid quick_analysis probability and sort by probability descending
+    const matchesWithProbability = matches
+      .filter(m => 
+        m.quick_analysis && 
+        m.quick_analysis.probability > 0 &&
+        m.quick_analysis.best_pick &&
+        (m.status === "NS" || m.status === "SCHEDULED" || m.status === "TIMED")
+      )
+      .sort((a, b) => (b.quick_analysis?.probability || 0) - (a.quick_analysis?.probability || 0));
+    
+    return matchesWithProbability.slice(0, 4);
+  }, [matches]);
+
+  // Get remaining matches (excluding top picks)
+  const remainingMatches = useMemo(() => {
+    const topPickIds = new Set(topPicks.map(m => m.id));
+    return matches.filter(m => !topPickIds.has(m.id));
+  }, [matches, topPicks]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="dashboard">
       {/* Hero Section */}
