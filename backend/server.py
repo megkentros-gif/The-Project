@@ -475,8 +475,8 @@ async def get_match_detail(match_id: str):
         away_team_id = fixture.get("teams", {}).get("away", {}).get("id")
         
         await asyncio.sleep(0.5)
-        h2h_data = await fetch_api_football(f"/fixtures/headtohead?h2h={home_team_id}-{away_team_id}&last=5")
-        h2h_fixtures = h2h_data.get("response", [])
+        h2h_data = await fetch_api_football(f"/fixtures/headtohead?h2h={home_team_id}-{away_team_id}")
+        h2h_fixtures = h2h_data.get("response", [])[:5]  # Limit to 5 in code
         
         match["head_to_head"] = [
             {
@@ -489,11 +489,11 @@ async def get_match_detail(match_id: str):
             for h in h2h_fixtures
         ]
         
-        # Fetch team form (last 5 matches)
+        # Fetch team form (last 5 matches) - use season instead of last parameter
         await asyncio.sleep(0.5)
-        home_form_data = await fetch_api_football(f"/fixtures?team={home_team_id}&last=5")
+        home_form_data = await fetch_api_football(f"/fixtures?team={home_team_id}&season=2024&status=FT")
         await asyncio.sleep(0.5)
-        away_form_data = await fetch_api_football(f"/fixtures?team={away_team_id}&last=5")
+        away_form_data = await fetch_api_football(f"/fixtures?team={away_team_id}&season=2024&status=FT")
         
         def extract_form(team_id, fixtures_list):
             form = []
