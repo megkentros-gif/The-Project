@@ -15,25 +15,27 @@ export function ParlayProvider({ children }) {
   }, [parlayItems]);
 
   const addToParlay = (item) => {
-    // Accept object with {matchId, selection, price} and store it directly
-    // Normalize the object to ensure we have the right structure
-    const normalizedItem = {
-      matchId: item.matchId || item.match_id,
-      selection: item.selection,
-      price: item.price || item.odds
+    // Accept and store object with {home_team, away_team, selection_name, price}
+    const parlayItem = {
+      match_id: item.match_id || item.matchId,
+      home_team: item.home_team,
+      away_team: item.away_team,
+      selection_name: item.selection_name || item.selection,
+      price: item.price || item.odds,
+      match_name: item.match_name || `${item.home_team} vs ${item.away_team}`
     };
 
     // Check if match already in parlay
-    if (parlayItems.some(p => (p.matchId === normalizedItem.matchId || p.match_id === normalizedItem.matchId))) {
+    if (parlayItems.some(p => p.match_id === parlayItem.match_id)) {
       return { success: false, message: "This match is already in your parlay" };
     }
     
-    setParlayItems([...parlayItems, normalizedItem]);
+    setParlayItems([...parlayItems, parlayItem]);
     return { success: true, message: "Added to parlay!" };
   };
 
   const removeFromParlay = (matchId) => {
-    setParlayItems(parlayItems.filter(p => p.matchId !== matchId && p.match_id !== matchId));
+    setParlayItems(parlayItems.filter(p => p.match_id !== matchId));
   };
 
   const clearParlay = () => {
