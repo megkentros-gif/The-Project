@@ -15,19 +15,22 @@ import {
   Target,
   Shield,
   Goal,
-  BarChart3
+  BarChart3,
+  Plus
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useParlay } from "@/context/ParlayContext";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function MatchDetail() {
   const { matchId } = useParams();
   const navigate = useNavigate();
+  const { addToParlay, parlayItems } = useParlay();
   const [match, setMatch] = useState(null);
   const [loading, setLoading] = useState(true);
 
