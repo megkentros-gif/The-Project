@@ -108,6 +108,7 @@ user_problem_statement: |
   2. High-Accuracy AI Analysis with Web Search - Search Eurohoops, Basketnews, Sport24, Gazzetta.gr, SDNA, Marca, AS
   3. Professional EuroLeague Team Logos - All 20 teams mapped
   4. Advanced Betting Markets - Handicap, Alternative totals, BTTS with Value Bet calculation
+  5. Top 4 High-Probability Picks Section - Featured picks with red theme for each league
 
 backend:
   - task: "Navigation State Persistence"
@@ -179,6 +180,18 @@ backend:
         agent: "testing"
         comment: "Extended markets structure correctly implemented. Odds response includes 'Handicap' and 'Over/Under Alternative' fields as required. API quota exhausted (401 errors) prevents live odds data, but structure is correct."
 
+  - task: "Quick Probability Calculation for Matches"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Implemented calculate_quick_probability() function that calculates AI probability based on odds. Returns probability, best_pick, pick_type. Has fallback logic for when odds are unavailable using team name hash for demo purposes."
+
 frontend:
   - task: "Value Bet UI Display"
     implemented: true
@@ -186,7 +199,7 @@ frontend:
     file: "frontend/src/pages/MatchDetail.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
@@ -198,7 +211,7 @@ frontend:
     file: "frontend/src/pages/MatchDetail.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
@@ -210,11 +223,23 @@ frontend:
     file: "frontend/src/pages/MatchDetail.jsx"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Added Extended Markets Section with Handicap/Spread card and Alternative Totals card"
+
+  - task: "Top 4 High-Probability Picks Section"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/Dashboard.jsx, frontend/src/components/FeaturedPickCard.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Implemented featured picks section with: (1) Dashboard.jsx updated with topPicks useMemo sorting by probability, (2) New FeaturedPickCard.jsx component with red theme styling - dark red gradient background, HOT badge with pulse animation, thick red border, AI probability in red circle, (3) Dynamic filtering - updates when league changes"
 
 metadata:
   created_by: "main_agent"
