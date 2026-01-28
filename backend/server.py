@@ -792,6 +792,9 @@ async def fetch_basketball_from_odds_api(sport_key: str) -> List[Dict[str, Any]]
                                     elif name == "Under":
                                         best_odds["Over/Under"][f"Under {point}"] = str(round(price, 2))
                     
+                    # Calculate quick AI probability for featured picks
+                    quick_analysis = calculate_quick_probability(best_odds)
+                    
                     game = {
                         "id": f"bb_{match.get('id', '')}",
                         "sport": "basketball",
@@ -808,7 +811,8 @@ async def fetch_basketball_from_odds_api(sport_key: str) -> List[Dict[str, Any]]
                         "away_score": None,
                         "has_odds": True,
                         "odds": best_odds,
-                        "bookmakers": best_odds.get("bookmakers", [])[:5]
+                        "bookmakers": best_odds.get("bookmakers", [])[:5],
+                        "quick_analysis": quick_analysis
                     }
                     games.append(game)
                 
