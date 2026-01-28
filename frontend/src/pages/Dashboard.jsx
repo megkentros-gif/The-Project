@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { 
@@ -8,7 +8,9 @@ import {
   ChevronRight,
   Trophy,
   Dribbble,
-  Clock
+  Clock,
+  Flame,
+  Target
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import MatchCard from "@/components/MatchCard";
+import FeaturedPickCard from "@/components/FeaturedPickCard";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
