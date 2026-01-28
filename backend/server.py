@@ -469,7 +469,7 @@ async def get_matches(
     only_with_odds: bool = False,
     status: Optional[str] = "SCHEDULED"
 ):
-    """Get upcoming matches from Football-Data.org"""
+    """Get upcoming matches with REAL odds from bookmakers"""
     all_matches = []
     
     # Fetch football matches
@@ -477,6 +477,15 @@ async def get_matches(
         leagues_to_fetch = [league] if league and league in FOOTBALL_LEAGUES else list(FOOTBALL_LEAGUES.keys())
         
         for league_code in leagues_to_fetch:
+            league_info = FOOTBALL_LEAGUES[league_code]
+            
+            # Fetch real odds for this league
+            odds_key = league_info.get("odds_key", "")
+            odds_map = {}
+            if odds_key:
+                odds_map = await fetch_real_odds(odds_key)
+                logger.info(f"Fetched {len(odds_map)} odds for {league_code}")
+            
             # Fetch scheduled matches for this competition
             endpoint = f"/competitions/{league_code}/matches"
             if status:
@@ -486,7 +495,12 @@ async def get_matches(
             matches = data.get("matches", [])
             
             for match in matches[:20]:  # Limit to 20 per league
-                parsed = parse_football_data_match(match, league_code)
+                parsed = parse_football_data_match(match, league_code, odds_map)
+                
+                # Filter by odds if requested
+                if only_with_odds and not parsed.get("has_odds"):
+                    continue
+                    
                 all_matches.append(parsed)
             
             await asyncio.sleep(0.1)  # Small delay to respect rate limits
@@ -508,7 +522,14 @@ async def get_matches(
     # Sort by date
     all_matches.sort(key=lambda x: x.get("match_date", ""))
     
-    return {"matches": all_matches, "total": len(all_matches)}
+    # Count matches with real odds
+    with_odds = sum(1 for m in all_matches if m.get("has_odds"))
+    
+    return {
+        "matches": all_matches, 
+        "total": len(all_matches),
+        "with_real_odds": with_odds
+    }
 
 @api_router.get("/matches/{match_id}")
 async def get_match_detail(match_id: str):
