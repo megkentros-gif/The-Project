@@ -115,8 +115,10 @@ export default function ParlayBuilder() {
 
     const newItem = {
       match_id: selectedMatch.id,
-      selection: betType.label,
-      odds: odds,
+      home_team: selectedMatch.home_team,
+      away_team: selectedMatch.away_team,
+      selection_name: betType.label,
+      price: odds,
       match_name: `${selectedMatch.home_team} vs ${selectedMatch.away_team}`
     };
 
